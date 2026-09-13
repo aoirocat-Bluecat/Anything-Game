@@ -56,31 +56,35 @@
 
                     <!-- ワードウルフ: ホーム -->
                     <div v-if="ww.screen === 'home'" class="space-y-6">
+                        <!-- 共通の名前入力 (タブを切り替えても維持されます) -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">あなたの名前</label>
-                            <input v-model="ww.myName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="（例）たろう">
+                            <input v-model="globalName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="（例）たろう">
                         </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex flex-col justify-between transition-colors">
                                 <div>
-                                    <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">部屋を作る</h3>
+                                    <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">ワードウルフを作る</h3>
                                     <p class="text-xs text-indigo-700 dark:text-indigo-400 mb-4">進行役を兼ねて参加します。</p>
                                 </div>
-                                <button @click="wwCreateRoom" :disabled="!ww.myName" class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                <button @click="wwCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
                                     部屋を作成
                                 </button>
                             </div>
+                            
+                            <!-- 共通のID参加 (自動振り分け) -->
                             <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col justify-between transition-colors">
                                 <div>
-                                    <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-1">部屋に参加</h3>
-                                    <input v-model="ww.inputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-sm mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors" placeholder="ルームIDを入力">
+                                    <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">教えてもらったIDで参加</h3>
+                                    <input v-model="globalInputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W-xxxx / J-xxxx">
                                 </div>
-                                <button @click="wwJoinRoom" :disabled="!ww.myName || !ww.inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
-                                    参加する
+                                <button @click="smartJoinRoom" :disabled="!globalName || !globalInputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                    自動判定して参加
                                 </button>
                             </div>
                         </div>
-                        <p v-if="ww.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ ww.errorMsg }}</p>
+                        <p v-if="globalErrorMsg || ww.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ globalErrorMsg || ww.errorMsg }}</p>
                     </div>
 
                     <!-- ワードウルフ: ロビー -->
@@ -88,8 +92,8 @@
                         <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-200 dark:border-amber-700/50 text-center shadow-inner transition-colors">
                             <p class="text-sm text-amber-800 dark:text-amber-400 font-bold mb-2">みんなにルームIDを教えてね！</p>
                             <div class="flex items-center justify-center gap-3">
-                                <code class="text-3xl font-mono font-black text-slate-800 dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 dark:border-amber-600 tracking-widest transition-colors">{{ ww.roomId }}</code>
-                                <button @click="wwCopyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition">コピー</button>
+                                <code class="text-2xl sm:text-3xl font-mono font-black text-slate-800 dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 dark:border-amber-600 tracking-widest transition-colors select-all">{{ ww.roomId }}</code>
+                                <button @click="wwCopyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">コピー</button>
                             </div>
                         </div>
 
@@ -111,11 +115,9 @@
                         <div v-if="ww.isHost" class="border-t-2 border-gray-100 dark:border-slate-700 pt-5 transition-colors">
                             <h3 class="font-bold text-lg mb-4 dark:text-white">⚙️ ゲーム設定</h3>
                             <div class="space-y-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border dark:border-slate-700 transition-colors">
-                                
                                 <div class="p-3 bg-indigo-50 dark:bg-indigo-900/40 rounded-lg text-sm text-indigo-800 dark:text-indigo-200 font-bold mb-4 border border-indigo-200 dark:border-indigo-700/50 text-center shadow-sm">
                                     ✨ お題はランダムに自動決定されるため、ホストも一緒に遊べます！
                                 </div>
-
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ウルフの人数 (現在: {{ ww.wolfCount }}人)</label>
                                     <input v-model.number="ww.wolfCount" type="number" min="1" :max="Math.max(1, ww.players.length - 1)" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md outline-none transition-colors">
@@ -192,33 +194,45 @@
 
                     <!-- 人狼: ホーム -->
                     <div v-if="wwr.screen === 'home'" class="space-y-6">
+                        <!-- 共通の名前入力 (タブを切り替えても維持されます) -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 transition-colors">あなたの名前</label>
-                            <input v-model="wwr.myName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-2 focus:ring-slate-500 outline-none transition-colors" placeholder="（例）たろう">
+                            <input v-model="globalName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-2 focus:ring-slate-500 outline-none transition-colors" placeholder="（例）たろう">
                         </div>
+                        
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 transition-colors">
-                                <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-2">部屋を作る（ホスト）</h3>
-                                <button @click="wwrCreateRoom" :disabled="!wwr.myName" class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                            <div class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex flex-col justify-between transition-colors">
+                                <div>
+                                    <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">人狼の部屋を作る</h3>
+                                    <p class="text-xs text-indigo-700 dark:text-indigo-400 mb-4">進行役を兼ねて参加します。</p>
+                                </div>
+                                <button @click="wwrCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
                                     部屋を作成
                                 </button>
                             </div>
-                            <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 transition-colors">
-                                <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">部屋に参加（ゲスト）</h3>
-                                <input v-model="wwr.inputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm mb-3 outline-none transition-colors" placeholder="ルームID">
-                                <button @click="wwrJoinRoom" :disabled="!wwr.myName || !wwr.inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
-                                    参加する
+                            
+                            <!-- 共通のID参加 (自動振り分け) -->
+                            <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col justify-between transition-colors">
+                                <div>
+                                    <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">教えてもらったIDで参加</h3>
+                                    <input v-model="globalInputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W-xxxx / J-xxxx">
+                                </div>
+                                <button @click="smartJoinRoom" :disabled="!globalName || !globalInputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                    自動判定して参加
                                 </button>
                             </div>
                         </div>
-                        <p v-if="wwr.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ wwr.errorMsg }}</p>
+                        <p v-if="globalErrorMsg || wwr.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ globalErrorMsg || wwr.errorMsg }}</p>
                     </div>
 
                     <!-- 人狼: ロビー -->
                     <div v-if="wwr.screen === 'lobby'" class="space-y-6">
                         <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-200 dark:border-amber-700/50 text-center shadow-inner transition-colors">
                             <p class="text-sm text-amber-800 dark:text-amber-400 font-bold mb-2">みんなにルームIDを教えてね！</p>
-                            <code class="text-3xl font-mono font-black text-slate-800 dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 dark:border-amber-600 tracking-widest transition-colors">{{ wwr.roomId }}</code>
+                            <div class="flex items-center justify-center gap-3">
+                                <code class="text-2xl sm:text-3xl font-mono font-black text-slate-800 dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 dark:border-amber-600 tracking-widest transition-colors select-all">{{ wwr.roomId }}</code>
+                                <button @click="wwrCopyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">コピー</button>
+                            </div>
                         </div>
 
                         <div>
@@ -368,12 +382,47 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, watchEffect } = Vue;
+        const { createApp, ref, reactive, computed, watch, watchEffect } = Vue;
 
         createApp({
             setup() {
                 const currentTab = ref('wordwolf');
                 const isNightMode = ref(false);
+
+                // ==========================================
+                // 共通 (自動振り分けログイン & 名前保存)
+                // ==========================================
+                // ローカルストレージから前回入力した名前を取得
+                const globalName = ref(localStorage.getItem('my_party_game_name') || '');
+                const globalInputRoomId = ref('');
+                const globalErrorMsg = ref('');
+
+                // 名前が変更されたらローカルストレージに自動保存
+                watch(globalName, (newVal) => {
+                    localStorage.setItem('my_party_game_name', newVal);
+                });
+
+                // IDの先頭文字を判定して各ゲームに接続する
+                const smartJoinRoom = () => {
+                    globalErrorMsg.value = '';
+                    ww.errorMsg = '';
+                    wwr.errorMsg = '';
+                    const rawId = globalInputRoomId.value.trim().toUpperCase();
+                    
+                    if (rawId.startsWith('W-')) {
+                        currentTab.value = 'wordwolf';
+                        ww.myName = globalName.value;
+                        ww.inputRoomId = rawId;
+                        wwJoinRoom();
+                    } else if (rawId.startsWith('J-')) {
+                        currentTab.value = 'werewolf';
+                        wwr.myName = globalName.value;
+                        wwr.inputRoomId = rawId;
+                        wwrJoinRoom();
+                    } else {
+                        globalErrorMsg.value = 'IDの形式が正しくありません (W- または J- から始まります)';
+                    }
+                };
 
                 // ナイトモード（ダークモード）切り替え
                 const toggleNightMode = () => {
@@ -386,7 +435,7 @@
                     const body = document.body;
                     let bgClass = isNightMode.value ? 'bg-slate-900 text-gray-200' : 'bg-slate-100 text-gray-800';
                     
-                    if (currentTab.value === 'werewolf') {
+                    if (currentTab.value === 'werewolf' && wwr.screen === 'game') {
                         if (wwr.phase === 'night') {
                             bgClass = isNightMode.value ? 'bg-slate-950 text-gray-200' : 'bg-slate-900 text-gray-200';
                         } else if (wwr.phase === 'vote') {
@@ -398,10 +447,18 @@
 
                 const switchTab = (tab) => {
                     currentTab.value = tab;
+                    globalErrorMsg.value = '';
+                    ww.errorMsg = '';
+                    wwr.errorMsg = '';
+                };
+
+                // ID生成ヘルパー (プレフィックス付き)
+                const generatePrefixedId = (prefix) => {
+                    return prefix + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                 };
 
                 // ==========================================
-                //  ワードウルフ 関連の状態・関数
+                //  ワードウルフ
                 // ==========================================
                 const wwThemePairs = [
                     ['りんご', 'みかん'], ['犬', '猫'], ['うどん', 'そば'], ['コーラ', 'サイダー'], ['海', '山'], 
@@ -418,8 +475,9 @@
                 let wwPeer = null; const wwConnections = {}; let wwHostConn = null;
 
                 const wwCreateRoom = () => {
+                    ww.myName = globalName.value; // 共通入力から取得
                     ww.errorMsg = '';
-                    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    const id = generatePrefixedId('W');
                     wwPeer = new Peer(id);
                     wwPeer.on('open', (id) => {
                         ww.peerId = id; ww.roomId = id; ww.isHost = true; ww.screen = 'lobby';
@@ -455,9 +513,10 @@
                 const wwEndGame = () => { wwBroadcast({ type: 'result', data: ww.resultData }); ww.screen = 'result'; };
                 const wwBackToLobby = () => { wwBroadcast({ type: 'back_to_lobby' }); ww.screen = 'lobby'; };
                 const wwJoinRoom = () => {
-                    ww.errorMsg = ''; wwPeer = new Peer();
+                    ww.errorMsg = '';
+                    wwPeer = new Peer();
                     wwPeer.on('open', (id) => {
-                        ww.peerId = id; const targetId = ww.inputRoomId.toUpperCase(); wwHostConn = wwPeer.connect(targetId);
+                        ww.peerId = id; const targetId = ww.inputRoomId; wwHostConn = wwPeer.connect(targetId);
                         wwHostConn.on('open', () => { ww.roomId = targetId; wwHostConn.send({ type: 'join', name: ww.myName }); ww.screen = 'lobby'; });
                         wwHostConn.on('data', (data) => {
                             if (data.type === 'players') ww.players.splice(0, ww.players.length, ...data.players);
@@ -465,14 +524,14 @@
                             else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; }
                             else if (data.type === 'back_to_lobby') ww.screen = 'lobby';
                         });
-                        wwHostConn.on('close', () => { ww.errorMsg = 'ホストとの接続が切れました。'; ww.screen = 'home'; });
+                        wwHostConn.on('close', () => { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; });
                     });
-                    wwPeer.on('error', () => ww.errorMsg = 'ルームが見つかりません。');
+                    wwPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
                 };
                 const wwCopyRoomId = () => { navigator.clipboard.writeText(ww.roomId); alert('ルームIDをコピーしました！'); };
 
                 // ==========================================
-                //  人狼ゲーム 関連の状態・関数
+                //  人狼ゲーム
                 // ==========================================
                 const wwrRoleData = { villager: { name: '村人', icon: '🧑‍🌾' }, wolf: { name: '人狼', icon: '🐺' }, seer: { name: '占い師', icon: '🔮' }, knight: { name: '騎士', icon: '🛡️' } };
 
@@ -501,26 +560,15 @@
                 });
                 const wwrIsWolfAlly = (id) => wwrSecretRoles[id] === 'wolf' || wwr.wolfAllies.some(a => wwr.players.find(p=>p.name===a)?.id === id);
 
-                // ================== タイマー & 自動進行ロジック ==================
                 const wwrStartTimer = (sec, onEndCallback) => {
-                    clearInterval(gameTimerInterval);
-                    wwr.timeLeft = sec;
-                    wwrBroadcast({ type: 'timer', timeLeft: wwr.timeLeft });
-                    
+                    clearInterval(gameTimerInterval); wwr.timeLeft = sec; wwrBroadcast({ type: 'timer', timeLeft: wwr.timeLeft });
                     gameTimerInterval = setInterval(() => {
                         wwr.timeLeft--;
-                        if (wwr.timeLeft <= 0) {
-                            clearInterval(gameTimerInterval);
-                            onEndCallback();
-                        } else {
-                            wwrBroadcast({ type: 'timer', timeLeft: wwr.timeLeft });
-                        }
+                        if (wwr.timeLeft <= 0) { clearInterval(gameTimerInterval); onEndCallback(); } 
+                        else { wwrBroadcast({ type: 'timer', timeLeft: wwr.timeLeft }); }
                     }, 1000);
                 };
-
                 const wwrStopTimer = () => { clearInterval(gameTimerInterval); wwr.timeLeft = 0; };
-
-                // 行動者が全員終わったかチェックする
                 const wwrCheckAutoAdvance = () => {
                     if (!wwr.isHost) return;
                     if (wwr.phase === 'night') {
@@ -533,7 +581,10 @@
                 };
 
                 const wwrCreateRoom = () => {
-                    wwr.errorMsg = ''; const id = Math.random().toString(36).substring(2, 8).toUpperCase(); wwrPeer = new Peer(id);
+                    wwr.myName = globalName.value; // 共通入力から取得
+                    wwr.errorMsg = '';
+                    const id = generatePrefixedId('J');
+                    wwrPeer = new Peer(id);
                     wwrPeer.on('open', (id) => { wwr.peerId = id; wwr.roomId = id; wwr.isHost = true; wwr.screen = 'lobby'; wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true }); });
                     wwrPeer.on('connection', (conn) => {
                         wwrConnections[conn.peer] = conn;
@@ -543,6 +594,7 @@
                             if (idx !== -1) wwr.players.splice(idx, 1); delete wwrConnections[conn.peer]; wwrBroadcastState();
                         });
                     });
+                    wwrPeer.on('error', () => wwr.errorMsg = '通信エラーが発生しました。');
                 };
 
                 const wwrHandleHostReceive = (senderId, data) => {
@@ -557,7 +609,7 @@
                                 const conn = wwrConnections[senderId]; if(conn && conn.open) conn.send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf });
                             }
                         } else if (wwr.phase === 'vote') { wwrVotes[senderId] = data.target; if(!wwrActedPlayers.includes(senderId)) wwrActedPlayers.push(senderId); }
-                        wwrCheckAutoAdvance(); // アクションの度に全員終わったかチェック
+                        wwrCheckAutoAdvance();
                     }
                 };
 
@@ -594,15 +646,11 @@
                     wwr.phase = 'day'; wwrResetActions();
                     wwr.announceLog = diedId ? `朝になりました。\n${wwr.players.find(x => x.id === diedId).name} が殺されていました...。\n生存者で【${wwr.settings.discussTime}秒】話し合いをしてください。` : `朝になりました。\n昨晩は誰も死にませんでした！\n生存者で【${wwr.settings.discussTime}秒】話し合いをしてください。`;
                     wwrBroadcastState();
-                    
-                    if (!wwrCheckWinCondition()) {
-                        wwrStartTimer(wwr.settings.discussTime, wwrStartVote);
-                    }
+                    if (!wwrCheckWinCondition()) wwrStartTimer(wwr.settings.discussTime, wwrStartVote);
                 };
 
                 const wwrStartVote = () => { 
-                    wwrStopTimer();
-                    wwr.phase = 'vote'; 
+                    wwrStopTimer(); wwr.phase = 'vote'; 
                     wwr.announceLog = `話し合いが終了しました。\n処刑する人を1人選んで【${wwr.settings.actionTime}秒以内】に投票してください。`; 
                     wwrResetActions(); wwrBroadcastState(); 
                     wwrStartTimer(wwr.settings.actionTime, wwrResolveVote);
@@ -620,7 +668,6 @@
                     wwrBroadcastState();
 
                     if(!wwrCheckWinCondition()) { 
-                        // 少し結果を見せてから夜へ移行
                         setTimeout(() => { 
                             wwr.dayCount++; wwr.phase = 'night'; 
                             wwr.announceLog = `夜が来ました。\n役職者は【${wwr.settings.actionTime}秒以内】に行動を選択してください。`; 
@@ -638,8 +685,7 @@
                 };
 
                 const wwrEndGame = (winTeam) => {
-                    wwrStopTimer();
-                    wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive })));
+                    wwrStopTimer(); wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive })));
                     wwr.screen = 'result'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); });
                 };
 
@@ -648,9 +694,10 @@
                 const wwrHasActed = (id) => wwrActedPlayers.includes(id); const wwrHasVoted = (id) => Object.keys(wwrVotes).includes(id);
 
                 const wwrJoinRoom = () => {
-                    wwr.errorMsg = ''; wwrPeer = new Peer();
+                    wwr.errorMsg = '';
+                    wwrPeer = new Peer();
                     wwrPeer.on('open', (id) => {
-                        wwr.peerId = id; const targetId = wwr.inputRoomId.toUpperCase(); wwrHostConn = wwrPeer.connect(targetId);
+                        wwr.peerId = id; const targetId = wwr.inputRoomId; wwrHostConn = wwrPeer.connect(targetId);
                         wwrHostConn.on('open', () => { wwr.roomId = targetId; wwrHostConn.send({ type: 'join', name: wwr.myName }); wwr.screen = 'lobby'; });
                         wwrHostConn.on('data', (data) => {
                             if (data.type === 'state') {
@@ -664,9 +711,9 @@
                             else if (data.type === 'result') { wwr.winner = data.winner; wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results); wwr.screen = 'result'; } 
                             else if (data.type === 'back_to_lobby') { wwr.screen = 'lobby'; }
                         });
-                        wwrHostConn.on('close', () => { wwr.errorMsg = 'ホストとの接続が切れました。'; wwr.screen = 'home'; });
+                        wwrHostConn.on('close', () => { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; });
                     });
-                    wwrPeer.on('error', () => wwr.errorMsg = 'ルームが見つかりません。');
+                    wwrPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
                 };
 
                 const wwrSubmitAction = () => {
@@ -675,21 +722,27 @@
                         if (wwr.phase === 'night') { wwrNightActions[wwr.myRole] = wwr.selectedTarget; if (wwr.myRole === 'seer') { wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' }; } } 
                         else if (wwr.phase === 'vote') { wwrVotes[wwr.peerId] = wwr.selectedTarget; }
                         if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId);
-                        wwrCheckAutoAdvance(); // 行動後に全員終わったかチェック
+                        wwrCheckAutoAdvance(); 
                     } else { 
                         wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); 
                         if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); 
                     }
                     wwr.selectedTarget = null;
                 };
+                
+                const wwrCopyRoomId = () => { navigator.clipboard.writeText(wwr.roomId); alert('ルームIDをコピーしました！'); };
+
 
                 return {
-                    currentTab, switchTab, isNightMode, toggleNightMode, formattedTime,
+                    currentTab, switchTab, isNightMode, toggleNightMode, 
+                    globalName, globalInputRoomId, globalErrorMsg, smartJoinRoom,
+                    
                     // ワードウルフ
                     ww, wwCreateRoom, wwJoinRoom, wwCopyRoomId, wwStartGame, wwEndGame, wwBackToLobby,
+                    
                     // 人狼
-                    wwr, wwrRoleData, wwrPhaseText, wwrMyPlayerInfo, wwrCanAct, wwrIsWolfAlly,
-                    wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrResolveNight, wwrStartVote, wwrResolveVote,
+                    wwr, wwrRoleData, wwrPhaseText, wwrMyPlayerInfo, wwrCanAct, wwrIsWolfAlly, formattedTime,
+                    wwrCreateRoom, wwrJoinRoom, wwrCopyRoomId, wwrStartGame, wwrResolveNight, wwrStartVote, wwrResolveVote,
                     wwrBackToLobby, wwrHasActed, wwrHasVoted, wwrSubmitAction
                 };
             }
