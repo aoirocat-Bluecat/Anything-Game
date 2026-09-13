@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>なんでもゲーム (ワードウルフ & 人狼)</title>
+    <!-- スタイル用にTailwind CSSを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- UI構築用にVue 3を読み込み -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- WebRTC通信用にPeerJSを読み込み -->
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+</head>
+<body class="bg-slate-100 text-gray-800 font-sans min-h-screen p-4 flex flex-col items-center justify-center transition-colors duration-500" id="body-bg">
+    
+    <div id="app" class="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 my-4">
+        
+        <!-- ヘッダー（タイトル変更） -->
+        <div class="bg-indigo-600 text-white p-4 text-center">
+            <h1 class="text-2xl sm:text-3xl font-black tracking-widest">🎲 なんでもゲーム</h1>
+        </div>
+
+        <!-- ==================== タブナビゲーション ==================== -->
+        <div class="flex border-b border-gray-200 bg-gray-50">
+            <button @click="switchTab('wordwolf')" 
+                :class="currentTab === 'wordwolf' ? 'border-b-4 border-indigo-600 text-indigo-600 bg-white font-black' : 'text-gray-500 hover:text-gray-700'"
+                class="flex-1 py-4 text-center font-bold transition text-sm sm:text-base flex items-center justify-center gap-2">
+                🔍 ワードウルフ
+            </button>
+            <button @click="switchTab('werewolf')" 
+                :class="currentTab === 'werewolf' ? 'border-b-4 border-indigo-600 text-indigo-600 bg-white font-black' : 'text-gray-500 hover:text-gray-700'"
+                class="flex-1 py-4 text-center font-bold transition text-sm sm:text-base flex items-center justify-center gap-2">
+                🌕 人狼ゲーム
+            </button>
+        </div>
+
+        <div class="p-6 sm:p-8">
+
+            <!---------------------------------------------------- 
+               ■ ワードウルフ モード
+            ---------------------------------------------------->
+            <div v-if="currentTab === 'wordwolf'">
+                <h2 class="text-xl sm:text-2xl font-black text-center text-indigo-600 mb-6 tracking-wider">
+                    🐺 ワードウルフ
+                </h2>
+
+                <!-- ワードウルフ: ホーム -->
+                <div v-if="ww.screen === 'home'" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">あなたの名前</label>
+                        <input v-model="ww.myName" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="（例）たろう">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-5 border-2 border-indigo-100 rounded-xl bg-indigo-50 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-indigo-900 mb-1">部屋を作る</h3>
+                                <p class="text-xs text-indigo-700 mb-4">あなたが進行役になります。</p>
+                            </div>
+                            <button @click="wwCreateRoom" :disabled="!ww.myName" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                部屋を作成
+                            </button>
+                        </div>
+                        <div class="p-5 border-2 border-emerald-100 rounded-xl bg-emerald-50 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-emerald-900 mb-1">部屋に参加</h3>
+                                <input v-model="ww.inputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm mb-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="ルームIDを入力">
+                            </div>
+                            <button @click="wwJoinRoom" :disabled="!ww.myName || !ww.inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                参加する
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="ww.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ ww.errorMsg }}</p>
+                </div>
+
+                <!-- ワードウルフ: ロビー -->
+                <div v-if="ww.screen === 'lobby'" class="space-y-6">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-inner">
+                        <p class="text-sm text-amber-800 font-bold mb-2">みんなにルームIDを教えてね！</p>
+                        <div class="flex items-center justify-center gap-3">
+                            <code class="text-3xl font-mono font-black text-slate-800 bg-white px-4 py-2 rounded-lg border-2 border-amber-300 tracking-widest">{{ ww.roomId }}</code>
+                            <button @click="wwCopyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition">コピー</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-3 flex items-center gap-2">
+                            👥 参加者 <span class="bg-gray-200 text-gray-800 text-sm px-2 py-1 rounded-full">{{ ww.players.length }}人</span>
+                        </h3>
+                        <ul class="divide-y divide-gray-100 border rounded-xl overflow-hidden shadow-sm">
+                            <li v-for="p in ww.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white">
+                                <span class="font-bold text-gray-700">{{ p.name }}</span>
+                                <div class="space-x-2">
+                                    <span v-if="p.id === ww.peerId" class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded font-bold">あなた</span>
+                                    <span v-if="p.isHost" class="text-xs bg-rose-100 text-rose-800 px-2 py-1 rounded font-bold">ホスト</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-if="ww.isHost" class="border-t-2 border-gray-100 pt-5">
+                        <h3 class="font-bold text-lg mb-4">⚙️ ゲーム設定</h3>
+                        <div class="space-y-4 bg-gray-50 p-4 rounded-xl border">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">🧑‍🌾 市民のお題</label>
+                                    <input v-model="ww.themeCitizen" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">🐺 ウルフのお題</label>
+                                    <input v-model="ww.themeWolf" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">ウルフの人数 (現在: {{ ww.wolfCount }}人)</label>
+                                <input v-model.number="ww.wolfCount" type="number" min="1" :max="Math.max(1, ww.players.length - 1)" class="w-full px-3 py-2 border border-gray-300 rounded-md outline-none">
+                            </div>
+                            <button @click="wwStartGame" :disabled="ww.players.length < 3" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-black py-4 px-4 rounded-xl text-lg disabled:opacity-50 transition shadow-lg mt-4">
+                                ゲーム開始 (3人以上)
+                            </button>
+                            <p v-if="ww.players.length < 3" class="text-xs text-rose-500 text-center font-bold">開始には3人以上のプレイヤーが必要です</p>
+                        </div>
+                    </div>
+                    <div v-else class="text-center text-gray-500 py-6 font-bold bg-gray-50 rounded-xl border">
+                        ホストがゲームを開始するのを待っています...☕️
+                    </div>
+                </div>
+
+                <!-- ワードウルフ: ゲーム中 -->
+                <div v-if="ww.screen === 'game'" class="space-y-8 text-center py-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-500 mb-2">あなたのお題は...</h2>
+                        <div class="bg-indigo-50 border-4 border-indigo-200 rounded-2xl p-10 shadow-inner">
+                            <p class="text-4xl sm:text-5xl font-black text-indigo-900 tracking-wider">{{ ww.myTheme }}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 font-bold bg-gray-100 py-3 rounded-lg">みんなで話し合いを始めてください🗣️</p>
+                    
+                    <div v-if="ww.isHost" class="pt-8 border-t-2 border-gray-100">
+                        <button @click="wwEndGame" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition">
+                            話し合い終了 ＆ 結果発表
+                        </button>
+                    </div>
+                    <div v-else class="text-sm text-gray-400 font-bold mt-8">ホストが結果発表を行うまでお待ちください</div>
+                </div>
+
+                <!-- ワードウルフ: 結果発表 -->
+                <div v-if="ww.screen === 'result'" class="space-y-6">
+                    <h2 class="text-3xl font-black text-center text-rose-600 mb-6 tracking-widest">結果発表 🎉</h2>
+                    <div class="space-y-3">
+                        <div v-for="p in ww.resultData" :key="p.id" class="p-4 border-2 rounded-xl flex items-center justify-between gap-2" :class="p.role === 'wolf' ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">{{ p.role === 'wolf' ? '🐺' : '🧑‍🌾' }}</span>
+                                <span class="font-black text-lg text-gray-800">{{ p.name }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-gray-500 font-bold block">お題</span>
+                                <span class="font-bold text-gray-900">{{ p.theme }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="ww.isHost" class="pt-6 text-center border-t-2 border-gray-100 mt-6">
+                        <button @click="wwBackToLobby" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition">
+                            もう一度遊ぶ（ロビーに戻る）
+                        </button>
+                    </div>
+                    <div v-else class="text-center text-sm text-gray-400 font-bold mt-6">ホストがロビーに戻るのをお待ちください</div>
+                </div>
+            </div>
+
+
+            <!---------------------------------------------------- 
+               ■ 人狼ゲーム モード
+            ---------------------------------------------------->
+            <div v-if="currentTab === 'werewolf'">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-wider">🌕 人狼ゲーム</h2>
+                    <div v-if="wwr.screen === 'game'" class="text-xs font-bold bg-slate-800 text-white px-3 py-1.5 rounded-full">
+                        {{ wwr.dayCount }}日目 : {{ wwrPhaseText }}
+                    </div>
+                </div>
+
+                <!-- 人狼: ホーム -->
+                <div v-if="wwr.screen === 'home'" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">あなたの名前</label>
+                        <input v-model="wwr.myName" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-slate-500 outline-none" placeholder="（例）たろう">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-5 border-2 border-indigo-100 rounded-xl bg-indigo-50">
+                            <h3 class="text-lg font-bold text-indigo-900 mb-2">部屋を作る（ホスト）</h3>
+                            <button @click="wwrCreateRoom" :disabled="!wwr.myName" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                部屋を作成
+                            </button>
+                        </div>
+                        <div class="p-5 border-2 border-emerald-100 rounded-xl bg-emerald-50">
+                            <h3 class="text-lg font-bold text-emerald-900 mb-2">部屋に参加（ゲスト）</h3>
+                            <input v-model="wwr.inputRoomId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm mb-3 outline-none" placeholder="ルームID">
+                            <button @click="wwrJoinRoom" :disabled="!wwr.myName || !wwr.inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
+                                参加する
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="wwr.errorMsg" class="text-red-500 text-sm text-center font-bold">{{ wwr.errorMsg }}</p>
+                </div>
+
+                <!-- 人狼: ロビー -->
+                <div v-if="wwr.screen === 'lobby'" class="space-y-6">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center shadow-inner">
+                        <p class="text-sm text-amber-800 font-bold mb-2">みんなにルームIDを教えてね！</p>
+                        <code class="text-3xl font-mono font-black text-slate-800 bg-white px-4 py-2 rounded-lg border-2 border-amber-300 tracking-widest">{{ wwr.roomId }}</code>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">👥 参加者 ({{ wwr.players.length }}人)</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span v-for="p in wwr.players" :key="p.id" class="bg-gray-100 border border-gray-300 px-3 py-1 rounded-full text-sm font-bold">
+                                {{ p.name }} <span v-if="p.isHost" class="text-xs text-rose-500 ml-1">(H)</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div v-if="wwr.isHost" class="border-t-2 border-gray-100 pt-5">
+                        <h3 class="font-bold text-lg mb-4">⚙️ 役職設定</h3>
+                        <div class="grid grid-cols-3 gap-4 bg-gray-50 p-4 rounded-xl border mb-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500">🐺 人狼</label>
+                                <input v-model.number="wwr.roleCount.wolf" type="number" min="1" class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500">🔮 占い師</label>
+                                <input v-model.number="wwr.roleCount.seer" type="number" min="0" class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500">🛡️ 騎士</label>
+                                <input v-model.number="wwr.roleCount.knight" type="number" min="0" class="w-full px-2 py-1 border rounded">
+                            </div>
+                        </div>
+                        <p class="text-sm text-center mb-4 font-bold text-gray-600">
+                            村人: {{ Math.max(0, wwr.players.length - wwr.roleCount.wolf - wwr.roleCount.seer - wwr.roleCount.knight) }} 人
+                        </p>
+                        <button @click="wwrStartGame" :disabled="wwr.players.length < 3 || wwr.players.length <= wwr.roleCount.wolf * 2" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-black py-4 px-4 rounded-xl text-lg disabled:opacity-50 transition shadow-lg">
+                            ゲーム開始
+                        </button>
+                    </div>
+                    <div v-else class="text-center text-gray-500 py-6 font-bold bg-gray-50 rounded-xl border">
+                        ホストの開始を待っています...
+                    </div>
+                </div>
+
+                <!-- 人狼: ゲーム中 -->
+                <div v-if="wwr.screen === 'game'" class="space-y-6">
+                    <div class="p-4 rounded-xl flex items-center justify-between border-2" :class="!wwrMyPlayerInfo?.isAlive ? 'bg-gray-200 border-gray-300' : (wwr.myRole === 'wolf' ? 'bg-rose-50 border-rose-200' : 'bg-blue-50 border-blue-200')">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold mb-1">あなたの役職</p>
+                            <p class="text-2xl font-black">
+                                <span>{{ wwrRoleData[wwr.myRole]?.icon }} {{ wwrRoleData[wwr.myRole]?.name }}</span>
+                            </p>
+                            <p v-if="!wwrMyPlayerInfo?.isAlive" class="text-red-600 font-bold text-sm mt-1">💀 死亡しました</p>
+                        </div>
+                        <div v-if="wwr.myRole === 'wolf' && wwr.wolfAllies.length > 0" class="text-right text-xs text-rose-700 font-bold bg-white p-2 rounded-lg border border-rose-100 shadow-sm">
+                            仲間の人狼:<br>
+                            <span v-for="ally in wwr.wolfAllies" :key="ally">{{ ally }} </span>
+                        </div>
+                    </div>
+
+                    <div v-if="wwr.announceLog" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 font-bold text-sm">
+                        {{ wwr.announceLog }}
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-gray-700 mb-3 flex justify-between items-end">
+                            プレイヤー一覧 <span class="text-xs text-gray-500">タップして選択</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button v-for="p in wwr.players" :key="p.id" 
+                                @click="wwr.selectedTarget = p.id"
+                                :disabled="!wwrCanAct || !p.isAlive || (wwr.myRole === 'wolf' && wwr.phase === 'night' && wwrIsWolfAlly(p.id)) || (wwr.phase === 'night' && p.id === wwr.peerId && wwr.myRole !== 'wolf')"
+                                class="p-3 rounded-lg border-2 text-left transition relative"
+                                :class="{
+                                    'opacity-50 bg-gray-100 border-gray-200 cursor-not-allowed': !p.isAlive,
+                                    'border-indigo-500 bg-indigo-50 shadow-md': wwr.selectedTarget === p.id,
+                                    'border-gray-200 bg-white hover:border-gray-300': wwr.selectedTarget !== p.id && p.isAlive && wwrCanAct,
+                                }">
+                                <span class="font-bold" :class="!p.isAlive ? 'line-through text-gray-400' : 'text-gray-800'">{{ p.name }}</span>
+                                <span v-if="!p.isAlive" class="absolute right-2 top-3 text-xs">💀</span>
+                                <span v-if="wwr.isHost && wwr.phase === 'night' && wwrHasActed(p.id)" class="absolute right-2 top-3 text-xs text-green-500">✅</span>
+                                <span v-if="wwr.isHost && wwr.phase === 'vote' && wwrHasVoted(p.id)" class="absolute right-2 top-3 text-xs text-green-500">✅</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="wwrCanAct && wwr.selectedTarget" class="mt-4">
+                        <button @click="wwrSubmitAction" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition">
+                            決定する
+                        </button>
+                    </div>
+
+                    <div v-if="wwr.seerResult" class="p-4 bg-purple-50 border border-purple-200 rounded-xl text-center shadow-inner">
+                        <p class="text-xs text-purple-600 font-bold mb-1">占い結果</p>
+                        <p class="text-lg font-black text-purple-900">{{ wwr.seerResult.name }} は <span :class="wwr.seerResult.isWolf ? 'text-rose-600' : 'text-blue-600'">{{ wwr.seerResult.isWolf ? '🐺 人狼' : '🧑‍🌾 人間' }}</span> です。</p>
+                    </div>
+
+                    <div v-if="wwr.isHost" class="border-t-2 border-dashed border-gray-300 pt-5 mt-6">
+                        <h3 class="font-bold text-sm text-gray-500 mb-2">👑 ゲームマスター（ホスト）操作</h3>
+                        <div v-if="wwr.phase === 'night'">
+                            <button @click="wwrResolveNight" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition">
+                                夜の行動を終了して「朝」にする
+                            </button>
+                        </div>
+                        <div v-if="wwr.phase === 'day'">
+                            <button @click="wwrStartVote" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition">
+                                話し合いを終了して「投票」を開始する
+                            </button>
+                        </div>
+                        <div v-if="wwr.phase === 'vote'">
+                            <button @click="wwrResolveVote" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition">
+                                投票を締め切って処刑者を決定する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 人狼: 結果発表 -->
+                <div v-if="wwr.screen === 'result'" class="space-y-6">
+                    <h2 class="text-3xl font-black text-center mb-6 tracking-widest" :class="wwr.winner === 'wolf' ? 'text-rose-600' : 'text-blue-600'">
+                        {{ wwr.winner === 'wolf' ? '🐺 人狼チームの勝利' : '🧑‍🌾 村人チームの勝利' }} 🎉
+                    </h2>
+                    <div class="space-y-2">
+                        <div v-for="p in wwr.finalResults" :key="p.id" class="p-3 border-2 rounded-xl flex items-center justify-between" :class="p.role === 'wolf' ? 'bg-rose-50 border-rose-200' : 'bg-blue-50 border-blue-200'">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">{{ wwrRoleData[p.role]?.icon }}</span>
+                                <span class="font-bold text-gray-800" :class="{'line-through opacity-50': !p.isAlive}">{{ p.name }}</span>
+                            </div>
+                            <div class="text-sm font-bold text-gray-600">{{ wwrRoleData[p.role]?.name }}</div>
+                        </div>
+                    </div>
+                    <div v-if="wwr.isHost" class="pt-6 text-center border-t-2 border-gray-100 mt-6">
+                        <button @click="wwrBackToLobby" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition">
+                            ロビーに戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, watch } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('wordwolf');
+
+                // 切替時に背景色などを整える
+                const switchTab = (tab) => {
+                    currentTab.value = tab;
+                    const body = document.getElementById('body-bg');
+                    body.className = 'bg-slate-100 text-gray-800 font-sans min-h-screen p-4 flex flex-col items-center justify-center transition-colors duration-500';
+                };
+
+                // ==========================================
+                //  ワードウルフ 関連の状態・関数
+                // ==========================================
+                const ww = reactive({
+                    screen: 'home',
+                    errorMsg: '',
+                    myName: '',
+                    peerId: '',
+                    isHost: false,
+                    roomId: '',
+                    inputRoomId: '',
+                    players: [],
+                    themeCitizen: 'りんご',
+                    themeWolf: 'みかん',
+                    wolfCount: 1,
+                    myTheme: '',
+                    resultData: []
+                });
+
+                let wwPeer = null;
+                const wwConnections = {};
+                let wwHostConn = null;
+
+                const wwCreateRoom = () => {
+                    ww.errorMsg = '';
+                    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    wwPeer = new Peer(id);
+                    
+                    wwPeer.on('open', (id) => {
+                        ww.peerId = id;
+                        ww.roomId = id;
+                        ww.isHost = true;
+                        ww.screen = 'lobby';
+                        ww.players.push({ id: id, name: ww.myName, isHost: true });
+                    });
+
+                    wwPeer.on('connection', (conn) => {
+                        wwConnections[conn.peer] = conn;
+                        conn.on('data', (data) => {
+                            if (data.type === 'join') {
+                                ww.players.push({ id: conn.peer, name: data.name, isHost: false });
+                                wwBroadcast({ type: 'players', players: ww.players });
+                            }
+                        });
+                        conn.on('close', () => {
+                            const idx = ww.players.findIndex(p => p.id === conn.peer);
+                            if (idx !== -1) ww.players.splice(idx, 1);
+                            delete wwConnections[conn.peer];
+                            wwBroadcast({ type: 'players', players: ww.players });
+                        });
+                    });
+                    wwPeer.on('error', () => ww.errorMsg = '通信エラーが発生しました。');
+                };
+
+                const wwBroadcast = (data) => {
+                    Object.values(wwConnections).forEach(c => { if(c.open) c.send(data); });
+                };
+
+                const wwStartGame = () => {
+                    const shuffledIds = [...ww.players].map(p => p.id).sort(() => 0.5 - Math.random());
+                    const wolfIds = shuffledIds.slice(0, ww.wolfCount);
+                    const assignments = {};
+                    ww.players.forEach(p => {
+                        const isWolf = wolfIds.includes(p.id);
+                        assignments[p.id] = { role: isWolf ? 'wolf' : 'citizen', theme: isWolf ? ww.themeWolf : ww.themeCitizen };
+                    });
+
+                    Object.values(wwConnections).forEach(c => {
+                        if(c.open) c.send({ type: 'start', role: assignments[c.peer].role, theme: assignments[c.peer].theme });
+                    });
+
+                    ww.myTheme = assignments[ww.peerId].theme;
+                    ww.resultData.splice(0, ww.resultData.length, ...ww.players.map(p => ({
+                        id: p.id, name: p.name, role: assignments[p.id].role, theme: assignments[p.id].theme
+                    })));
+                    ww.screen = 'game';
+                };
+
+                const wwEndGame = () => {
+                    wwBroadcast({ type: 'result', data: ww.resultData });
+                    ww.screen = 'result';
+                };
+
+                const wwBackToLobby = () => {
+                    wwBroadcast({ type: 'back_to_lobby' });
+                    ww.screen = 'lobby';
+                };
+
+                const wwJoinRoom = () => {
+                    ww.errorMsg = '';
+                    wwPeer = new Peer();
+                    wwPeer.on('open', (id) => {
+                        ww.peerId = id;
+                        const targetId = ww.inputRoomId.toUpperCase();
+                        wwHostConn = wwPeer.connect(targetId);
+                        
+                        wwHostConn.on('open', () => {
+                            ww.roomId = targetId;
+                            wwHostConn.send({ type: 'join', name: ww.myName });
+                            ww.screen = 'lobby';
+                        });
+
+                        wwHostConn.on('data', (data) => {
+                            if (data.type === 'players') ww.players.splice(0, ww.players.length, ...data.players);
+                            else if (data.type === 'start') { ww.myTheme = data.theme; ww.screen = 'game'; }
+                            else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; }
+                            else if (data.type === 'back_to_lobby') ww.screen = 'lobby';
+                        });
+                        wwHostConn.on('close', () => { ww.errorMsg = 'ホストとの接続が切れました。'; ww.screen = 'home'; });
+                    });
+                    wwPeer.on('error', () => ww.errorMsg = 'ルームが見つかりません。');
+                };
+
+                const wwCopyRoomId = () => {
+                    navigator.clipboard.writeText(ww.roomId);
+                    alert('ルームIDをコピーしました！');
+                };
+
+
+                // ==========================================
+                //  人狼ゲーム 関連の状態・関数
+                // ==========================================
+                const wwrRoleData = {
+                    villager: { name: '村人', icon: '🧑‍🌾' },
+                    wolf: { name: '人狼', icon: '🐺' },
+                    seer: { name: '占い師', icon: '🔮' },
+                    knight: { name: '騎士', icon: '🛡️' }
+                };
+
+                const wwr = reactive({
+                    screen: 'home',
+                    errorMsg: '',
+                    myName: '',
+                    peerId: '',
+                    isHost: false,
+                    roomId: '',
+                    inputRoomId: '',
+                    players: [],
+                    roleCount: { wolf: 1, seer: 1, knight: 1 },
+                    myRole: '',
+                    wolfAllies: [],
+                    dayCount: 1,
+                    phase: 'setup',
+                    announceLog: '',
+                    selectedTarget: null,
+                    seerResult: null,
+                    winner: '',
+                    finalResults: []
+                });
+
+                let wwrPeer = null;
+                const wwrConnections = {};
+                let wwrHostConn = null;
+                let wwrSecretRoles = {};
+                const wwrNightActions = { wolf: null, seer: null, knight: null };
+                const wwrVotes = {};
+                const wwrActedPlayers = [];
+
+                const wwrPhaseText = computed(() => {
+                    if(wwr.phase === 'night') return '夜（行動フェーズ）';
+                    if(wwr.phase === 'day') return '昼（議論フェーズ）';
+                    if(wwr.phase === 'vote') return '夕方（投票フェーズ）';
+                    return '';
+                });
+
+                const wwrMyPlayerInfo = computed(() => wwr.players.find(p => p.id === wwr.peerId));
+                
+                const wwrCanAct = computed(() => {
+                    if (!wwrMyPlayerInfo.value?.isAlive) return false;
+                    if (wwr.phase === 'night' && ['wolf', 'seer', 'knight'].includes(wwr.myRole) && !wwrActedPlayers.includes(wwr.peerId)) return true;
+                    if (wwr.phase === 'vote' && !wwrActedPlayers.includes(wwr.peerId)) return true;
+                    return false;
+                });
+
+                watch(() => wwr.phase, (newPhase) => {
+                    if (currentTab.value === 'werewolf') {
+                        const body = document.getElementById('body-bg');
+                        if (newPhase === 'night') body.className = 'bg-slate-900 text-gray-200 font-sans min-h-screen p-4 flex flex-col items-center justify-center transition-colors duration-1000';
+                        else if (newPhase === 'vote') body.className = 'bg-orange-100 text-gray-800 font-sans min-h-screen p-4 flex flex-col items-center justify-center transition-colors duration-1000';
+                        else body.className = 'bg-slate-100 text-gray-800 font-sans min-h-screen p-4 flex flex-col items-center justify-center transition-colors duration-1000';
+                    }
+                });
+
+                const wwrIsWolfAlly = (id) => wwrSecretRoles[id] === 'wolf' || wwr.wolfAllies.some(a => wwr.players.find(p=>p.name===a)?.id === id);
+
+                const wwrCreateRoom = () => {
+                    wwr.errorMsg = '';
+                    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    wwrPeer = new Peer(id);
+                    
+                    wwrPeer.on('open', (id) => {
+                        wwr.peerId = id;
+                        wwr.roomId = id;
+                        wwr.isHost = true;
+                        wwr.screen = 'lobby';
+                        wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true });
+                    });
+
+                    wwrPeer.on('connection', (conn) => {
+                        wwrConnections[conn.peer] = conn;
+                        conn.on('data', (data) => wwrHandleHostReceive(conn.peer, data));
+                        conn.on('close', () => {
+                            const idx = wwr.players.findIndex(p => p.id === conn.peer);
+                            if (idx !== -1) wwr.players.splice(idx, 1);
+                            delete wwrConnections[conn.peer];
+                            wwrBroadcastState();
+                        });
+                    });
+                };
+
+                const wwrHandleHostReceive = (senderId, data) => {
+                    if (data.type === 'join') {
+                        wwr.players.push({ id: senderId, name: data.name, isHost: false, isAlive: true });
+                        wwrBroadcastState();
+                    } else if (data.type === 'action') {
+                        if (wwr.phase === 'night') {
+                            const role = wwrSecretRoles[senderId];
+                            if(role) wwrNightActions[role] = data.target;
+                            if(!wwrActedPlayers.includes(senderId)) wwrActedPlayers.push(senderId);
+                            
+                            if (role === 'seer') {
+                                const targetIsWolf = wwrSecretRoles[data.target] === 'wolf';
+                                const targetName = wwr.players.find(p => p.id === data.target)?.name;
+                                const conn = wwrConnections[senderId];
+                                if(conn && conn.open) conn.send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf });
+                            }
+                        } else if (wwr.phase === 'vote') {
+                            wwrVotes[senderId] = data.target;
+                            if(!wwrActedPlayers.includes(senderId)) wwrActedPlayers.push(senderId);
+                        }
+                    }
+                };
+
+                const wwrBroadcastState = () => {
+                    const state = {
+                        type: 'state',
+                        players: wwr.players,
+                        dayCount: wwr.dayCount,
+                        phase: wwr.phase,
+                        announceLog: wwr.announceLog,
+                        actedPlayers: wwrActedPlayers
+                    };
+                    if(wwr.phase === 'day' || wwr.phase === 'vote') wwr.announceLog = state.announceLog;
+                    Object.values(wwrConnections).forEach(c => { if(c.open) c.send(state); });
+                };
+
+                const wwrStartGame = () => {
+                    let deck = [];
+                    for(let i=0; i<wwr.roleCount.wolf; i++) deck.push('wolf');
+                    for(let i=0; i<wwr.roleCount.seer; i++) deck.push('seer');
+                    for(let i=0; i<wwr.roleCount.knight; i++) deck.push('knight');
+                    while(deck.length < wwr.players.length) deck.push('villager');
+                    deck = deck.sort(() => 0.5 - Math.random());
+                    
+                    wwrSecretRoles = {};
+                    wwr.players.forEach((p, idx) => {
+                        p.isAlive = true;
+                        wwrSecretRoles[p.id] = deck[idx];
+                    });
+
+                    wwr.players.forEach(p => {
+                        const r = wwrSecretRoles[p.id];
+                        let allies = [];
+                        if (r === 'wolf') {
+                            allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name);
+                        }
+                        if (p.id === wwr.peerId) {
+                            wwr.myRole = r;
+                            wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...allies);
+                        } else {
+                            const conn = wwrConnections[p.id];
+                            if(conn && conn.open) conn.send({ type: 'secret', role: r, wolfAllies: allies });
+                        }
+                    });
+
+                    wwr.dayCount = 1;
+                    wwr.phase = 'night';
+                    wwr.announceLog = '夜になりました。役職者は行動を選択してください。';
+                    wwrResetActions();
+                    wwr.screen = 'game';
+                    wwrBroadcastState();
+                };
+
+                const wwrResolveNight = () => {
+                    let diedId = null;
+                    const victimId = wwrNightActions.wolf;
+                    if (victimId && victimId !== wwrNightActions.knight) {
+                        diedId = victimId;
+                        const p = wwr.players.find(x => x.id === diedId);
+                        if(p) p.isAlive = false;
+                    }
+                    wwr.phase = 'day';
+                    wwrResetActions();
+                    wwr.announceLog = diedId ? `朝になりました。${wwr.players.find(x => x.id === diedId).name} が殺されていました...。` : `朝になりました。昨晩は誰も死にませんでした！`;
+                    wwrBroadcastState();
+                    wwrCheckWinCondition();
+                };
+
+                const wwrStartVote = () => {
+                    wwr.phase = 'vote';
+                    wwr.announceLog = '話し合いが終了しました。処刑する人を1人選んで投票してください。';
+                    wwrResetActions();
+                    wwrBroadcastState();
+                };
+
+                const wwrResolveVote = () => {
+                    const tally = {};
+                    Object.values(wwrVotes).forEach(targetId => { tally[targetId] = (tally[targetId] || 0) + 1; });
+                    let maxVotes = 0, executedId = null;
+                    for (const [id, count] of Object.entries(tally)) {
+                        if (count > maxVotes) { maxVotes = count; executedId = id; }
+                    }
+                    if (executedId) {
+                        const p = wwr.players.find(x => x.id === executedId);
+                        if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; }
+                    } else {
+                        wwr.announceLog = `本日の処刑者はいませんでした。`;
+                    }
+                    if(!wwrCheckWinCondition()) {
+                        setTimeout(() => {
+                            wwr.dayCount++;
+                            wwr.phase = 'night';
+                            wwr.announceLog = '夜が来ました。役職者は行動を選択してください。';
+                            wwrResetActions();
+                            wwrBroadcastState();
+                        }, 3000);
+                    }
+                };
+
+                const wwrCheckWinCondition = () => {
+                    const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length;
+                    const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length;
+                    if (aliveWolves === 0) { wwrEndGame('human'); return true; }
+                    else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; }
+                    return false;
+                };
+
+                const wwrEndGame = (winTeam) => {
+                    wwr.winner = winTeam;
+                    wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({
+                        id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive
+                    })));
+                    wwr.screen = 'result';
+                    Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); });
+                };
+
+                const wwrBackToLobby = () => {
+                    wwr.screen = 'lobby';
+                    wwr.phase = 'setup';
+                    Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); });
+                };
+
+                const wwrResetActions = () => {
+                    wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null;
+                    Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]);
+                    wwrActedPlayers.splice(0, wwrActedPlayers.length);
+                    wwr.selectedTarget = null;
+                    wwr.seerResult = null;
+                };
+
+                const wwrHasActed = (id) => wwrActedPlayers.includes(id);
+                const wwrHasVoted = (id) => Object.keys(wwrVotes).includes(id);
+
+                const wwrJoinRoom = () => {
+                    wwr.errorMsg = '';
+                    wwrPeer = new Peer();
+                    wwrPeer.on('open', (id) => {
+                        wwr.peerId = id;
+                        const targetId = wwr.inputRoomId.toUpperCase();
+                        wwrHostConn = wwrPeer.connect(targetId);
+                        
+                        wwrHostConn.on('open', () => {
+                            wwr.roomId = targetId;
+                            wwrHostConn.send({ type: 'join', name: wwr.myName });
+                            wwr.screen = 'lobby';
+                        });
+
+                        wwrHostConn.on('data', (data) => {
+                            if (data.type === 'state') {
+                                wwr.players.splice(0, wwr.players.length, ...data.players);
+                                wwr.dayCount = data.dayCount;
+                                wwr.phase = data.phase;
+                                wwr.announceLog = data.announceLog;
+                                wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers);
+                                if(!wwrActedPlayers.includes(wwr.peerId)) {
+                                    wwr.selectedTarget = null;
+                                    if(wwr.phase !== 'night') wwr.seerResult = null;
+                                }
+                                if(wwr.screen !== 'result') wwr.screen = 'game';
+                            } else if (data.type === 'secret') {
+                                wwr.myRole = data.role;
+                                wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...(data.wolfAllies || []));
+                            } else if (data.type === 'seer_result') {
+                                wwr.seerResult = { name: data.name, isWolf: data.isWolf };
+                            } else if (data.type === 'result') {
+                                wwr.winner = data.winner;
+                                wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results);
+                                wwr.screen = 'result';
+                            } else if (data.type === 'back_to_lobby') {
+                                wwr.screen = 'lobby';
+                            }
+                        });
+                        wwrHostConn.on('close', () => { wwr.errorMsg = 'ホストとの接続が切れました。'; wwr.screen = 'home'; });
+                    });
+                    wwrPeer.on('error', () => wwr.errorMsg = 'ルームが見つかりません。');
+                };
+
+                const wwrSubmitAction = () => {
+                    if (!wwr.selectedTarget) return;
+                    if (wwr.isHost) {
+                        if (wwr.phase === 'night') {
+                            wwrNightActions[wwr.myRole] = wwr.selectedTarget;
+                            if (wwr.myRole === 'seer') {
+                                wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' };
+                            }
+                        } else if (wwr.phase === 'vote') {
+                            wwrVotes[wwr.peerId] = wwr.selectedTarget;
+                        }
+                        if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId);
+                    } else {
+                        wwrHostConn.send({ type: 'action', target: wwr.selectedTarget });
+                        if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId);
+                    }
+                    wwr.selectedTarget = null;
+                };
+
+                return {
+                    currentTab, switchTab,
+                    // ワードウルフ
+                    ww, wwCreateRoom, wwJoinRoom, wwCopyRoomId, wwStartGame, wwEndGame, wwBackToLobby,
+                    // 人狼
+                    wwr, wwrRoleData, wwrPhaseText, wwrMyPlayerInfo, wwrCanAct, wwrIsWolfAlly,
+                    wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrResolveNight, wwrStartVote, wwrResolveVote,
+                    wwrBackToLobby, wwrHasActed, wwrHasVoted, wwrSubmitAction
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
