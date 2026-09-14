@@ -7,9 +7,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -50,29 +48,22 @@
         .color-btn:hover { transform: scale(1.1); }
         .color-selected { outline: 3px solid #6366f1; outline-offset: 2px; }
 
-        /* トグルスイッチ (配信者モード用) */
+        /* トグルスイッチ */
         .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
         .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
         
-        /* 全画面を確実に覆うための設定 */
-        html, body {
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
+        html, body { min-height: 100vh; margin: 0; padding: 0; }
     </style>
 </head>
-<!-- ここに dark:bg-slate-900 を追加して背景の白浮きを修正 -->
 <body class="font-sans transition-colors duration-1000 bg-slate-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200">
     
-    <div id="app" class="w-full max-w-3xl mx-auto flex flex-col items-center justify-center p-2 sm:p-4 min-h-screen relative">
+    <div id="app" class="w-full max-w-4xl mx-auto flex flex-col items-center justify-center p-2 sm:p-4 min-h-screen relative">
         
-        <!-- ヘッダー外のコントロール (配信者モード設定) -->
         <div class="w-full flex justify-end mb-2 gap-4">
             <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-slate-700 transition-colors">
                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300">📹 配信者モード</span>
                 <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" v-model="isStreamerMode" name="toggle" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-all duration-300" style="top: 2px; left: 2px;"/>
+                    <input type="checkbox" v-model="isStreamerMode" name="toggle" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white dark:bg-slate-200 border-4 appearance-none cursor-pointer z-10 transition-all duration-300" style="top: 2px; left: 2px;"/>
                     <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-slate-600 cursor-pointer transition-colors duration-300"></label>
                 </div>
             </div>
@@ -80,7 +71,6 @@
 
         <div class="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-slate-700 transition-colors duration-500">
             
-            <!-- ヘッダー -->
             <div class="bg-indigo-600 dark:bg-indigo-900 text-white p-4 text-center relative transition-colors duration-500">
                 <h1 class="text-2xl sm:text-3xl font-black tracking-widest">🎲 なんでもゲーム</h1>
                 <button @click="toggleNightMode" class="absolute right-4 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform" :title="isNightMode ? 'ライトモード' : 'ナイトモード'">
@@ -88,7 +78,7 @@
                 </button>
             </div>
 
-            <!-- 共通の参加画面 -->
+            <!-- 共通ログイン -->
             <div v-if="!isGameStarted" class="p-6 sm:p-8 border-b-8 border-gray-100 dark:border-slate-900 bg-gray-50 dark:bg-slate-800 transition-colors">
                 <h2 class="font-black text-lg mb-4 text-gray-800 dark:text-gray-200">共通ログイン（ゲスト用）</h2>
                 <div class="space-y-4">
@@ -99,7 +89,7 @@
                     <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col justify-between transition-colors">
                         <div>
                             <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">教えてもらったIDで参加</h3>
-                            <input v-model="globalInputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W- / J- / R- / C- / G- / D-">
+                            <input v-model="globalInputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W- / J- / R- / C- / G- / D- / S- / B-">
                         </div>
                         <button @click="smartJoinRoom" :disabled="!globalName || !globalInputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
                             自動判定して参加
@@ -109,14 +99,17 @@
                 </div>
             </div>
 
-            <!-- ==================== タブナビゲーション ==================== -->
-            <div v-if="!isGameStarted" class="flex flex-wrap border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
-                <button @click="switchTab('wordwolf')" :class="currentTab === 'wordwolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">🔍 ワードウルフ</button>
-                <button @click="switchTab('werewolf')" :class="currentTab === 'werewolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">🌕 人狼</button>
-                <button @click="switchTab('draw')" :class="currentTab === 'draw' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">🎨 お絵かき伝言</button>
-                <button @click="switchTab('reversi')" :class="currentTab === 'reversi' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ リバーシ</button>
-                <button @click="switchTab('gomoku')" :class="currentTab === 'gomoku' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ 五目並べ</button>
-                <button @click="switchTab('chess')" :class="currentTab === 'chess' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="w-1/3 sm:flex-1 py-3 text-center font-bold transition text-xs sm:text-sm">♟️ チェス</button>
+            <!-- タブナビゲーション (8種類) -->
+            <div v-if="!isGameStarted" class="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
+                <button @click="switchTab('wordwolf')" :class="currentTab === 'wordwolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🔍 ワードウルフ</button>
+                <button @click="switchTab('werewolf')" :class="currentTab === 'werewolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🌕 人狼</button>
+                <button @click="switchTab('synchro')" :class="currentTab === 'synchro' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">💯 シンクロ</button>
+                <button @click="switchTab('blind')" :class="currentTab === 'blind' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🃏 ブラインド</button>
+                
+                <button @click="switchTab('draw')" :class="currentTab === 'draw' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🎨 お絵かき伝言</button>
+                <button @click="switchTab('reversi')" :class="currentTab === 'reversi' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ リバーシ</button>
+                <button @click="switchTab('gomoku')" :class="currentTab === 'gomoku' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ 五目並べ</button>
+                <button @click="switchTab('chess')" :class="currentTab === 'chess' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">♟️ チェス</button>
             </div>
 
             <div class="p-4 sm:p-6">
@@ -209,7 +202,8 @@
                 <!-- リバーシ -->
                 <div v-if="currentTab === 'reversi'">
                     <div v-if="rev.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <button @click="revCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg">部屋を作成 (ホスト)</button>
+                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">リバーシの部屋を作る</h3>
+                        <button @click="revCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="rev.screen === 'lobby'" class="text-center space-y-4">
                         <div class="flex items-center justify-center gap-2 mb-2">
@@ -219,7 +213,7 @@
                         <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
 
                         <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ rev.players.length }} / 2人)</h3>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ rev.players.length }} / 2人</h3>
                             <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
                                 <li v-for="p in rev.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
                                     <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
@@ -250,7 +244,8 @@
                 <!-- チェス -->
                 <div v-if="currentTab === 'chess'">
                     <div v-if="chs.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <button @click="chsCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg">部屋を作成 (ホスト)</button>
+                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">チェスの部屋を作る</h3>
+                        <button @click="chsCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="chs.screen === 'lobby'" class="text-center space-y-4">
                         <div class="flex items-center justify-center gap-2 mb-2">
@@ -292,7 +287,7 @@
                 <div v-if="currentTab === 'gomoku'">
                     <div v-if="gom.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 transition-colors">
                         <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">五目並べの部屋を作る</h3>
-                        <button @click="gomCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg mt-2">部屋を作成 (ホスト)</button>
+                        <button @click="gomCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="gom.screen === 'lobby'" class="text-center space-y-4">
                         <div class="flex items-center justify-center gap-2 mb-2">
@@ -338,7 +333,7 @@
                     <div v-if="drw.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 transition-colors">
                         <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">お絵かき伝言を作る</h3>
                         <p class="text-xs mb-4 dark:text-gray-400">3人以上で遊ぶのがおすすめです。</p>
-                        <button @click="drwCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg mt-2">部屋を作成 (ホスト)</button>
+                        <button @click="drwCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
                     </div>
                     
                     <div v-if="drw.screen === 'lobby'" class="text-center space-y-4">
@@ -427,6 +422,128 @@
                     </div>
                 </div>
 
+                <!-- 💯 シンクロ・パーセント (NEW) -->
+                <div v-if="currentTab === 'synchro'">
+                    <div v-if="snc.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
+                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">シンクロ・パーセントを作る</h3>
+                        <button @click="sncCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
+                    </div>
+                    <div v-if="snc.screen === 'lobby'" class="space-y-6">
+                        <div class="text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(snc.roomId) }}</code>
+                                <button @click="copyText(snc.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
+                            </div>
+                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ snc.players.length }}人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
+                                <li v-for="p in snc.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === snc.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="snc.isHost && !p.isHost" @click="kickPlayer('synchro', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div v-if="snc.isHost" class="border-t-2 dark:border-slate-700 pt-4">
+                            <button @click="sncStartGame" :disabled="snc.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
+                        </div>
+                    </div>
+                    <div v-if="snc.screen === 'game'" class="text-center space-y-6">
+                        <div class="bg-indigo-50 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 p-4 rounded-xl">
+                            <h2 class="font-bold text-gray-500 dark:text-gray-400 mb-2">今回のお題</h2>
+                            <p class="text-xl font-black text-indigo-900 dark:text-indigo-200">{{ snc.currentTheme }}</p>
+                        </div>
+                        <div>
+                            <h2 class="dark:text-gray-400 font-bold mb-2">あなたの数字</h2>
+                            <p class="text-6xl font-black text-rose-500">{{ snc.myNumber }}</p>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 font-bold bg-gray-100 dark:bg-slate-700 py-3 rounded-lg transition-colors">数字を言わずに、みんなで話し合って小さい順を予想しよう🗣️</p>
+                        <div v-if="snc.isHost"><button @click="sncEndGame" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg mt-4">答え合わせ (全員の数字を公開)</button></div>
+                    </div>
+                    <div v-if="snc.screen === 'result'" class="text-center space-y-6">
+                        <h2 class="text-2xl font-black text-rose-500">全員の数字</h2>
+                        <div class="space-y-2">
+                            <div v-for="(p, index) in snc.resultData" :key="p.id" class="p-3 border-2 rounded-xl flex items-center justify-between" :class="index > 0 && snc.resultData[index-1].number > p.number ? 'bg-red-50 dark:bg-red-900/30 border-red-300' : 'bg-white dark:bg-slate-700 dark:border-slate-600'">
+                                <span class="font-bold dark:text-white">{{ p.name }}</span>
+                                <span class="text-2xl font-black" :class="index > 0 && snc.resultData[index-1].number > p.number ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-400'">{{ p.number }}</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-bold text-gray-500 dark:text-gray-400">※上から数字が小さい順に並んでいれば成功です！(赤くなっている所は順番ミス)</p>
+                        <button v-if="snc.isHost" @click="sncBackToLobby" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-md w-full">ロビーへ</button>
+                    </div>
+                </div>
+
+                <!-- 🃏 ブラインド・ナンバー (NEW) -->
+                <div v-if="currentTab === 'blind'">
+                    <div v-if="bnd.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
+                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">ブラインド・ナンバーを作る</h3>
+                        <button @click="bndCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
+                    </div>
+                    <div v-if="bnd.screen === 'lobby'" class="space-y-6">
+                        <div class="text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(bnd.roomId) }}</code>
+                                <button @click="copyText(bnd.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
+                            </div>
+                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ bnd.players.length }}人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
+                                <li v-for="p in bnd.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === bnd.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="bnd.isHost && !p.isHost" @click="kickPlayer('blind', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div v-if="bnd.isHost" class="border-t-2 dark:border-slate-700 pt-4">
+                            <button @click="bndStartGame" :disabled="bnd.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
+                        </div>
+                    </div>
+                    <div v-if="bnd.screen === 'game'" class="text-center space-y-6">
+                        <p class="text-gray-600 dark:text-gray-300 font-bold bg-gray-100 dark:bg-slate-700 py-3 rounded-lg transition-colors">見えている数字から全員の合計値を予想しよう！</p>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div v-for="p in bnd.visiblePlayers" :key="p.id" class="border-2 rounded-xl p-4 flex flex-col items-center bg-white dark:bg-slate-700 dark:border-slate-600 shadow-sm relative" :class="{'border-indigo-400': p.id === bnd.peerId}">
+                                <span class="font-bold mb-2 dark:text-white text-sm truncate w-full">{{ p.name }}</span>
+                                <div v-if="p.id === bnd.peerId" class="text-4xl font-black text-gray-300 dark:text-gray-500">❓</div>
+                                <div v-else class="text-4xl font-black" :class="p.card < 0 ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'">{{ p.card === 'x2' || p.card === 'MAX->0' ? p.card : p.card }}</div>
+                                <div v-if="p.id === bnd.peerId" class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">あなた</div>
+                            </div>
+                        </div>
+
+                        <div v-if="bnd.isHost" class="border-t-2 dark:border-slate-700 pt-4 mt-6">
+                            <button @click="bndEndGame" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg">「ダウト！」で結果発表</button>
+                        </div>
+                        <div v-else class="text-sm text-gray-400 font-bold mt-8">誰かが「ダウト」と言ったらホストが結果発表を押してください</div>
+                    </div>
+                    <div v-if="bnd.screen === 'result'" class="text-center space-y-6">
+                        <h2 class="text-2xl font-black text-rose-500">結果発表</h2>
+                        <div class="bg-indigo-50 dark:bg-indigo-900/50 border-4 border-indigo-200 dark:border-indigo-700/50 rounded-2xl p-6 shadow-inner">
+                            <p class="font-bold text-gray-500 dark:text-gray-400 mb-1">全員の合計値</p>
+                            <p class="text-6xl font-black text-indigo-900 dark:text-indigo-200">{{ bnd.trueTotal }}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div v-for="p in bnd.resultData" :key="p.id" class="border rounded-xl p-3 flex flex-col items-center bg-white dark:bg-slate-700 dark:border-slate-600">
+                                <span class="font-bold text-xs mb-1 dark:text-white truncate w-full">{{ p.name }}</span>
+                                <span class="text-2xl font-black" :class="p.card < 0 ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'">{{ p.card }}</span>
+                            </div>
+                        </div>
+
+                        <button v-if="bnd.isHost" @click="bndBackToLobby" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-md w-full">ロビーへ</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -438,7 +555,7 @@
             setup() {
                 const currentTab = ref('wordwolf');
                 const isNightMode = ref(false);
-                const isStreamerMode = ref(false); // 配信者モードフラグ
+                const isStreamerMode = ref(false);
                 
                 const globalName = ref(localStorage.getItem('my_party_game_name') || '');
                 const globalInputRoomId = ref('');
@@ -451,7 +568,9 @@
                     'reversi': () => revConnections,
                     'chess': () => chsConnections,
                     'gomoku': () => gomConnections,
-                    'draw': () => drwConnections
+                    'draw': () => drwConnections,
+                    'synchro': () => sncConnections,
+                    'blind': () => bndConnections
                 };
                 const stateMap = {
                     'wordwolf': () => ww,
@@ -459,7 +578,9 @@
                     'reversi': () => rev,
                     'chess': () => chs,
                     'gomoku': () => gom,
-                    'draw': () => drw
+                    'draw': () => drw,
+                    'synchro': () => snc,
+                    'blind': () => bnd
                 };
                 const broadcastMap = {
                     'wordwolf': () => wwBroadcast({ type: 'players', players: ww.players }),
@@ -468,9 +589,10 @@
                     'chess': () => { Object.values(chsConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:chs.players});}); },
                     'gomoku': () => { Object.values(gomConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:gom.players});}); },
                     'draw': () => { Object.values(drwConnections).forEach(c=>{if(c.open)c.send({type:'players', players:drw.players});}); },
+                    'synchro': () => { Object.values(sncConnections).forEach(c=>{if(c.open)c.send({type:'players', players:snc.players});}); },
+                    'blind': () => { Object.values(bndConnections).forEach(c=>{if(c.open)c.send({type:'players', players:bnd.players});}); }
                 };
 
-                // ホストによるキック処理
                 const kickPlayer = (gameType, targetId) => {
                     if(!confirm('このプレイヤーをキックしますか？')) return;
                     const conns = connectionsMap[gameType]();
@@ -488,25 +610,17 @@
                     broadcastMap[gameType]();
                 };
 
-                // ゲストがキックされたときの共通処理
                 const handleKicked = () => {
                     globalErrorMsg.value = 'ホストによってルームからキックされました。';
                     const activeState = stateMap[currentTab.value]();
-                    if(activeState) {
-                        activeState.screen = 'home';
-                        activeState.roomId = '';
-                        activeState.players = [];
-                    }
+                    if(activeState) { activeState.screen = 'home'; activeState.roomId = ''; activeState.players = []; }
                 };
 
-                // 配信者モードでIDを伏字にする
                 const displayRoomId = (id) => {
                     if (!id) return '';
                     if (!isStreamerMode.value) return id;
                     const parts = id.split('-');
-                    if(parts.length > 1) {
-                        return parts[0] + '-' + '*'.repeat(parts[1].length);
-                    }
+                    if(parts.length > 1) { return parts[0] + '-' + '*'.repeat(parts[1].length); }
                     return '*'.repeat(id.length);
                 };
 
@@ -516,7 +630,9 @@
                            (currentTab.value === 'reversi' && rev.screen !== 'home' && rev.screen !== 'lobby') ||
                            (currentTab.value === 'chess' && chs.screen !== 'home' && chs.screen !== 'lobby') ||
                            (currentTab.value === 'gomoku' && gom.screen !== 'home' && gom.screen !== 'lobby') ||
-                           (currentTab.value === 'draw' && drw.screen !== 'home' && drw.screen !== 'lobby');
+                           (currentTab.value === 'draw' && drw.screen !== 'home' && drw.screen !== 'lobby') ||
+                           (currentTab.value === 'synchro' && snc.screen !== 'home' && snc.screen !== 'lobby') ||
+                           (currentTab.value === 'blind' && bnd.screen !== 'home' && bnd.screen !== 'lobby');
                 });
 
                 watch(globalName, (newVal) => localStorage.setItem('my_party_game_name', newVal));
@@ -540,64 +656,23 @@
                     else if (rawId.startsWith('C-')) { currentTab.value = 'chess'; chs.myName = globalName.value; chs.inputRoomId = rawId; chsJoinRoom(); }
                     else if (rawId.startsWith('G-')) { currentTab.value = 'gomoku'; gom.myName = globalName.value; gom.inputRoomId = rawId; gomJoinRoom(); }
                     else if (rawId.startsWith('D-')) { currentTab.value = 'draw'; drw.myName = globalName.value; drw.inputRoomId = rawId; drwJoinRoom(); }
+                    else if (rawId.startsWith('S-')) { currentTab.value = 'synchro'; snc.myName = globalName.value; snc.inputRoomId = rawId; sncJoinRoom(); }
+                    else if (rawId.startsWith('B-')) { currentTab.value = 'blind'; bnd.myName = globalName.value; bnd.inputRoomId = rawId; bndJoinRoom(); }
                     else { globalErrorMsg.value = 'IDの形式が正しくありません'; }
                 };
 
                 // ==========================================
                 //  1. ワードウルフ
                 // ==========================================
-                const wwThemePairs = [
-                    ['りんご', 'みかん'], ['犬', '猫'], ['うどん', 'そば'], ['コーラ', 'サイダー'], ['海', '山'], 
-                    ['動物園', '水族館'], ['野球', 'サッカー'], ['遊園地', '映画館'], ['パン', 'ごはん'],
-                    ['マクドナルド', 'モスバーガー'], ['ラーメン', 'チャーハン'], ['カレー', 'シチュー'], 
-                    ['夏', '冬'], ['スマホ', 'パソコン'], ['鉛筆', 'シャーペン'], ['東京', '大阪'], 
-                    ['きのこの山', 'たけのこの里'], ['目玉焼き', 'ゆで卵'], ['お茶', '水'], ['朝', '夜']
-                ];
-
+                const wwThemePairs = [ ['りんご', 'みかん'], ['犬', '猫'], ['うどん', 'そば'], ['コーラ', 'サイダー'], ['海', '山'], ['動物園', '水族館'], ['野球', 'サッカー'], ['遊園地', '映画館'], ['パン', 'ごはん'], ['マクドナルド', 'モスバーガー'], ['ラーメン', 'チャーハン'], ['カレー', 'シチュー'], ['夏', '冬'], ['スマホ', 'パソコン'], ['鉛筆', 'シャーペン'], ['東京', '大阪'], ['きのこの山', 'たけのこの里'], ['目玉焼き', 'ゆで卵'], ['お茶', '水'], ['朝', '夜'] ];
                 const ww = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], wolfCount: 1, myTheme: '', resultData: [] });
                 let wwPeer = null; const wwConnections = {}; let wwHostConn = null;
-
-                const wwCreateRoom = () => {
-                    ww.myName = globalName.value; ww.errorMsg = ''; const id = generatePrefixedId('W'); wwPeer = new Peer(id);
-                    wwPeer.on('open', (id) => { ww.peerId = id; ww.roomId = id; ww.isHost = true; ww.screen = 'lobby'; ww.players.push({ id: id, name: ww.myName, isHost: true }); });
-                    wwPeer.on('connection', (conn) => {
-                        wwConnections[conn.peer] = conn;
-                        conn.on('data', (data) => { if (data.type === 'join') { ww.players.push({ id: conn.peer, name: data.name, isHost: false }); wwBroadcast({ type: 'players', players: ww.players }); } });
-                        conn.on('close', () => { ww.players = ww.players.filter(p => p.id !== conn.peer); delete wwConnections[conn.peer]; wwBroadcast({ type: 'players', players: ww.players }); });
-                    });
-                };
+                const wwCreateRoom = () => { ww.myName = globalName.value; ww.errorMsg = ''; const id = generatePrefixedId('W'); wwPeer = new Peer(id); wwPeer.on('open', (id) => { ww.peerId = id; ww.roomId = id; ww.isHost = true; ww.screen = 'lobby'; ww.players.push({ id: id, name: ww.myName, isHost: true }); }); wwPeer.on('connection', (conn) => { wwConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { ww.players.push({ id: conn.peer, name: data.name, isHost: false }); wwBroadcast({ type: 'players', players: ww.players }); } }); conn.on('close', () => { ww.players = ww.players.filter(p => p.id !== conn.peer); delete wwConnections[conn.peer]; wwBroadcast({ type: 'players', players: ww.players }); }); }); };
                 const wwBroadcast = (data) => { Object.values(wwConnections).forEach(c => { if(c.open) c.send(data); }); };
-                const wwStartGame = () => {
-                    const shuffledIds = [...ww.players].map(p => p.id).sort(() => 0.5 - Math.random());
-                    const wolfIds = shuffledIds.slice(0, ww.wolfCount);
-                    const pair = wwThemePairs[Math.floor(Math.random() * wwThemePairs.length)];
-                    const isFirstWolf = Math.random() > 0.5; 
-                    const currentCitizenTheme = isFirstWolf ? pair[1] : pair[0]; const currentWolfTheme = isFirstWolf ? pair[0] : pair[1];
-                    const assignments = {};
-                    ww.players.forEach(p => { const isWolf = wolfIds.includes(p.id); assignments[p.id] = { role: isWolf ? 'wolf' : 'citizen', theme: isWolf ? currentWolfTheme : currentCitizenTheme }; });
-                    Object.values(wwConnections).forEach(c => { if(c.open) c.send({ type: 'start', role: assignments[c.peer].role, theme: assignments[c.peer].theme }); });
-                    ww.myTheme = assignments[ww.peerId].theme;
-                    ww.resultData.splice(0, ww.resultData.length, ...ww.players.map(p => ({ id: p.id, name: p.name, role: assignments[p.id].role, theme: assignments[p.id].theme })));
-                    ww.screen = 'game';
-                };
+                const wwStartGame = () => { const shuffledIds = [...ww.players].map(p => p.id).sort(() => 0.5 - Math.random()); const wolfIds = shuffledIds.slice(0, ww.wolfCount); const pair = wwThemePairs[Math.floor(Math.random() * wwThemePairs.length)]; const isFirstWolf = Math.random() > 0.5; const currentCitizenTheme = isFirstWolf ? pair[1] : pair[0]; const currentWolfTheme = isFirstWolf ? pair[0] : pair[1]; const assignments = {}; ww.players.forEach(p => { const isWolf = wolfIds.includes(p.id); assignments[p.id] = { role: isWolf ? 'wolf' : 'citizen', theme: isWolf ? currentWolfTheme : currentCitizenTheme }; }); Object.values(wwConnections).forEach(c => { if(c.open) c.send({ type: 'start', role: assignments[c.peer].role, theme: assignments[c.peer].theme }); }); ww.myTheme = assignments[ww.peerId].theme; ww.resultData.splice(0, ww.resultData.length, ...ww.players.map(p => ({ id: p.id, name: p.name, role: assignments[p.id].role, theme: assignments[p.id].theme }))); ww.screen = 'game'; };
                 const wwEndGame = () => { wwBroadcast({ type: 'result', data: ww.resultData }); ww.screen = 'result'; };
                 const wwBackToLobby = () => { wwBroadcast({ type: 'back_to_lobby' }); ww.screen = 'lobby'; };
-                const wwJoinRoom = () => {
-                    wwPeer = new Peer();
-                    wwPeer.on('open', (id) => {
-                        ww.peerId = id; const targetId = ww.inputRoomId; wwHostConn = wwPeer.connect(targetId);
-                        wwHostConn.on('open', () => { ww.roomId = targetId; wwHostConn.send({ type: 'join', name: ww.myName }); ww.screen = 'lobby'; });
-                        wwHostConn.on('data', (data) => {
-                            if (data.type === 'players') ww.players.splice(0, ww.players.length, ...data.players);
-                            else if (data.type === 'start') { ww.myTheme = data.theme; ww.screen = 'game'; }
-                            else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; }
-                            else if (data.type === 'back_to_lobby') ww.screen = 'lobby';
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                        wwHostConn.on('close', () => { if(ww.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; }});
-                    });
-                    wwPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
-                };
+                const wwJoinRoom = () => { wwPeer = new Peer(); wwPeer.on('open', (id) => { ww.peerId = id; const targetId = ww.inputRoomId; wwHostConn = wwPeer.connect(targetId); wwHostConn.on('open', () => { ww.roomId = targetId; wwHostConn.send({ type: 'join', name: ww.myName }); ww.screen = 'lobby'; }); wwHostConn.on('data', (data) => { if (data.type === 'players') ww.players.splice(0, ww.players.length, ...data.players); else if (data.type === 'start') { ww.myTheme = data.theme; ww.screen = 'game'; } else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; } else if (data.type === 'back_to_lobby') ww.screen = 'lobby'; else if (data.type === 'kicked') handleKicked(); }); wwHostConn.on('close', () => { if(ww.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; }}); }); wwPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。'); };
 
                 // ==========================================
                 //  2. 人狼ゲーム
@@ -605,102 +680,18 @@
                 const wwrRoleData = { villager: { name: '村人', icon: '🧑‍🌾' }, wolf: { name: '人狼', icon: '🐺' }, seer: { name: '占い師', icon: '🔮' }, knight: { name: '騎士', icon: '🛡️' } };
                 const wwr = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], settings: { wolf: 1, seer: 1, knight: 1 }, myRole: '', wolfAllies: [], dayCount: 1, phase: 'setup', announceLog: '', selectedTarget: null, seerResult: null, winner: '', finalResults: [] });
                 let wwrPeer = null; const wwrConnections = {}; let wwrHostConn = null; let wwrSecretRoles = {}; const wwrNightActions = { wolf: null, seer: null, knight: null }; const wwrVotes = {}; const wwrActedPlayers = [];
-
                 const wwrPhaseText = computed(() => { if(wwr.phase === 'night') return '夜（行動フェーズ）'; if(wwr.phase === 'day') return '昼（議論フェーズ）'; if(wwr.phase === 'vote') return '夕方（投票フェーズ）'; return ''; });
                 const wwrMyPlayerInfo = computed(() => wwr.players.find(p => p.id === wwr.peerId));
                 const wwrCanAct = computed(() => { if (!wwrMyPlayerInfo.value?.isAlive) return false; if (wwr.phase === 'night' && ['wolf', 'seer', 'knight'].includes(wwr.myRole) && !wwrActedPlayers.includes(wwr.peerId)) return true; if (wwr.phase === 'vote' && !wwrActedPlayers.includes(wwr.peerId)) return true; return false; });
                 const wwrIsWolfAlly = (id) => wwrSecretRoles[id] === 'wolf' || wwr.wolfAllies.some(a => wwr.players.find(p=>p.name===a)?.id === id);
-
-                const wwrCreateRoom = () => {
-                    wwr.myName = globalName.value; const id = generatePrefixedId('J'); wwrPeer = new Peer(id);
-                    wwrPeer.on('open', (id) => { wwr.peerId = id; wwr.roomId = id; wwr.isHost = true; wwr.screen = 'lobby'; wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true }); });
-                    wwrPeer.on('connection', (conn) => {
-                        wwrConnections[conn.peer] = conn;
-                        conn.on('data', (data) => {
-                            if (data.type === 'join') { wwr.players.push({ id: conn.peer, name: data.name, isHost: false, isAlive: true }); broadcastMap['werewolf'](); } 
-                            else if (data.type === 'action') {
-                                if (wwr.phase === 'night') {
-                                    const role = wwrSecretRoles[conn.peer]; if(role) wwrNightActions[role] = data.target;
-                                    if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer);
-                                    if (role === 'seer') { const targetIsWolf = wwrSecretRoles[data.target] === 'wolf'; const targetName = wwr.players.find(p => p.id === data.target)?.name; if(wwrConnections[conn.peer] && wwrConnections[conn.peer].open) wwrConnections[conn.peer].send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf }); }
-                                } else if (wwr.phase === 'vote') { wwrVotes[conn.peer] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); }
-                            }
-                        });
-                        conn.on('close', () => { wwr.players = wwr.players.filter(p => p.id !== conn.peer); delete wwrConnections[conn.peer]; broadcastMap['werewolf'](); });
-                    });
-                };
-                const wwrStartGame = () => {
-                    let deck = []; for(let i=0; i<wwr.settings.wolf; i++) deck.push('wolf'); for(let i=0; i<wwr.settings.seer; i++) deck.push('seer'); for(let i=0; i<wwr.settings.knight; i++) deck.push('knight');
-                    while(deck.length < wwr.players.length) deck.push('villager'); deck = deck.sort(() => 0.5 - Math.random());
-                    wwrSecretRoles = {}; wwr.players.forEach((p, idx) => { p.isAlive = true; wwrSecretRoles[p.id] = deck[idx]; });
-                    wwr.players.forEach(p => {
-                        const r = wwrSecretRoles[p.id]; let allies = []; if (r === 'wolf') allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name);
-                        if (p.id === wwr.peerId) { wwr.myRole = r; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...allies); } 
-                        else { if(wwrConnections[p.id] && wwrConnections[p.id].open) wwrConnections[p.id].send({ type: 'secret', role: r, wolfAllies: allies }); }
-                    });
-                    wwr.dayCount = 1; wwr.phase = 'night'; wwr.announceLog = `夜になりました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null;
-                    Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.screen = 'game'; broadcastMap['werewolf']();
-                };
-                const wwrJoinRoom = () => {
-                    wwrPeer = new Peer();
-                    wwrPeer.on('open', (id) => {
-                        wwr.peerId = id; wwrHostConn = wwrPeer.connect(wwr.inputRoomId);
-                        wwrHostConn.on('open', () => { wwr.roomId = wwr.inputRoomId; wwrHostConn.send({ type: 'join', name: globalName.value }); wwr.screen = 'lobby'; });
-                        wwrHostConn.on('data', (data) => {
-                            if (data.type === 'state') {
-                                wwr.players.splice(0, wwr.players.length, ...data.players); wwr.dayCount = data.dayCount; wwr.phase = data.phase; wwr.announceLog = data.announceLog;
-                                wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers); if(!wwrActedPlayers.includes(wwr.peerId)) { wwr.selectedTarget = null; if(wwr.phase !== 'night') wwr.seerResult = null; }
-                                if(wwr.screen !== 'result') wwr.screen = 'game';
-                            } else if (data.type === 'secret') { wwr.myRole = data.role; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...(data.wolfAllies || [])); }
-                            else if (data.type === 'seer_result') { wwr.seerResult = { name: data.name, isWolf: data.isWolf }; } 
-                            else if (data.type === 'result') { wwr.winner = data.winner; wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results); wwr.screen = 'result'; } 
-                            else if (data.type === 'back_to_lobby') { wwr.screen = 'lobby'; }
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                        wwrHostConn.on('close', () => { if(wwr.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; }});
-                    });
-                    wwrPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
-                };
-
-                const wwrNextPhase = () => {
-                    if (wwr.phase === 'night') {
-                        let diedId = null; const victimId = wwrNightActions.wolf;
-                        if (victimId && victimId !== wwrNightActions.knight) { diedId = victimId; const p = wwr.players.find(x => x.id === diedId); if(p) p.isAlive = false; }
-                        wwr.phase = 'day'; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
-                        wwr.announceLog = diedId ? `朝になりました。\n${wwr.players.find(x => x.id === diedId).name} が殺されていました...。\n生存者で話し合いをしてください。` : `朝になりました。\n昨晩は誰も死にませんでした！\n生存者で話し合いをしてください。`;
-                        broadcastMap['werewolf'](); wwrCheckWinCondition();
-                    } else if (wwr.phase === 'day') {
-                        wwr.phase = 'vote'; wwr.announceLog = `話し合いが終了しました。\n処刑する人を1人選んで投票してください。`; 
-                        wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
-                        broadcastMap['werewolf']();
-                    } else if (wwr.phase === 'vote') {
-                        const tally = {}; Object.values(wwrVotes).forEach(targetId => { tally[targetId] = (tally[targetId] || 0) + 1; });
-                        let maxVotes = 0, executedId = null; for (const [id, count] of Object.entries(tally)) { if (count > maxVotes) { maxVotes = count; executedId = id; } }
-                        if (executedId) { const p = wwr.players.find(x => x.id === executedId); if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; } } else { wwr.announceLog = `票がまとまらなかったため、本日の処刑者はいませんでした。`; }
-                        broadcastMap['werewolf']();
-                        if(!wwrCheckWinCondition()) { 
-                            setTimeout(() => { wwr.dayCount++; wwr.phase = 'night'; wwr.announceLog = `夜が来ました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); }, 4000); 
-                        }
-                    }
-                };
-                const wwrCheckWinCondition = () => {
-                    const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length; const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length;
-                    if (aliveWolves === 0) { wwrEndGame('human'); return true; } else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; } return false;
-                };
-                const wwrEndGame = (winTeam) => {
-                    wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive })));
-                    wwr.screen = 'result'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); });
-                };
+                const wwrCreateRoom = () => { wwr.myName = globalName.value; const id = generatePrefixedId('J'); wwrPeer = new Peer(id); wwrPeer.on('open', (id) => { wwr.peerId = id; wwr.roomId = id; wwr.isHost = true; wwr.screen = 'lobby'; wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true }); }); wwrPeer.on('connection', (conn) => { wwrConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { wwr.players.push({ id: conn.peer, name: data.name, isHost: false, isAlive: true }); broadcastMap['werewolf'](); } else if (data.type === 'action') { if (wwr.phase === 'night') { const role = wwrSecretRoles[conn.peer]; if(role) wwrNightActions[role] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); if (role === 'seer') { const targetIsWolf = wwrSecretRoles[data.target] === 'wolf'; const targetName = wwr.players.find(p => p.id === data.target)?.name; if(wwrConnections[conn.peer] && wwrConnections[conn.peer].open) wwrConnections[conn.peer].send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf }); } } else if (wwr.phase === 'vote') { wwrVotes[conn.peer] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); } } }); conn.on('close', () => { wwr.players = wwr.players.filter(p => p.id !== conn.peer); delete wwrConnections[conn.peer]; broadcastMap['werewolf'](); }); }); };
+                const wwrStartGame = () => { let deck = []; for(let i=0; i<wwr.settings.wolf; i++) deck.push('wolf'); for(let i=0; i<wwr.settings.seer; i++) deck.push('seer'); for(let i=0; i<wwr.settings.knight; i++) deck.push('knight'); while(deck.length < wwr.players.length) deck.push('villager'); deck = deck.sort(() => 0.5 - Math.random()); wwrSecretRoles = {}; wwr.players.forEach((p, idx) => { p.isAlive = true; wwrSecretRoles[p.id] = deck[idx]; }); wwr.players.forEach(p => { const r = wwrSecretRoles[p.id]; let allies = []; if (r === 'wolf') allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name); if (p.id === wwr.peerId) { wwr.myRole = r; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...allies); } else { if(wwrConnections[p.id] && wwrConnections[p.id].open) wwrConnections[p.id].send({ type: 'secret', role: r, wolfAllies: allies }); } }); wwr.dayCount = 1; wwr.phase = 'night'; wwr.announceLog = `夜になりました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.screen = 'game'; broadcastMap['werewolf'](); };
+                const wwrJoinRoom = () => { wwrPeer = new Peer(); wwrPeer.on('open', (id) => { wwr.peerId = id; wwrHostConn = wwrPeer.connect(wwr.inputRoomId); wwrHostConn.on('open', () => { wwr.roomId = wwr.inputRoomId; wwrHostConn.send({ type: 'join', name: globalName.value }); wwr.screen = 'lobby'; }); wwrHostConn.on('data', (data) => { if (data.type === 'state') { wwr.players.splice(0, wwr.players.length, ...data.players); wwr.dayCount = data.dayCount; wwr.phase = data.phase; wwr.announceLog = data.announceLog; wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers); if(!wwrActedPlayers.includes(wwr.peerId)) { wwr.selectedTarget = null; if(wwr.phase !== 'night') wwr.seerResult = null; } if(wwr.screen !== 'result') wwr.screen = 'game'; } else if (data.type === 'secret') { wwr.myRole = data.role; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...(data.wolfAllies || [])); } else if (data.type === 'seer_result') { wwr.seerResult = { name: data.name, isWolf: data.isWolf }; } else if (data.type === 'result') { wwr.winner = data.winner; wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results); wwr.screen = 'result'; } else if (data.type === 'back_to_lobby') { wwr.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); wwrHostConn.on('close', () => { if(wwr.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; }}); }); wwrPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。'); };
+                const wwrNextPhase = () => { if (wwr.phase === 'night') { let diedId = null; const victimId = wwrNightActions.wolf; if (victimId && victimId !== wwrNightActions.knight) { diedId = victimId; const p = wwr.players.find(x => x.id === diedId); if(p) p.isAlive = false; } wwr.phase = 'day'; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.announceLog = diedId ? `朝になりました。\n${wwr.players.find(x => x.id === diedId).name} が殺されていました...。\n生存者で話し合いをしてください。` : `朝になりました。\n昨晩は誰も死にませんでした！\n生存者で話し合いをしてください。`; broadcastMap['werewolf'](); wwrCheckWinCondition(); } else if (wwr.phase === 'day') { wwr.phase = 'vote'; wwr.announceLog = `話し合いが終了しました。\n処刑する人を1人選んで投票してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); } else if (wwr.phase === 'vote') { const tally = {}; Object.values(wwrVotes).forEach(targetId => { tally[targetId] = (tally[targetId] || 0) + 1; }); let maxVotes = 0, executedId = null; for (const [id, count] of Object.entries(tally)) { if (count > maxVotes) { maxVotes = count; executedId = id; } } if (executedId) { const p = wwr.players.find(x => x.id === executedId); if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; } } else { wwr.announceLog = `票がまとまらなかったため、本日の処刑者はいませんでした。`; } broadcastMap['werewolf'](); if(!wwrCheckWinCondition()) { setTimeout(() => { wwr.dayCount++; wwr.phase = 'night'; wwr.announceLog = `夜が来ました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); }, 4000); } } };
+                const wwrCheckWinCondition = () => { const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length; const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length; if (aliveWolves === 0) { wwrEndGame('human'); return true; } else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; } return false; };
+                const wwrEndGame = (winTeam) => { wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive }))); wwr.screen = 'result'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); }); };
                 const wwrBackToLobby = () => { wwr.screen = 'lobby'; wwr.phase = 'setup'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-                const wwrSubmitAction = () => {
-                    if (!wwr.selectedTarget) return;
-                    if (wwr.isHost) {
-                        if (wwr.phase === 'night') { wwrNightActions[wwr.myRole] = wwr.selectedTarget; if (wwr.myRole === 'seer') { wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' }; } } 
-                        else if (wwr.phase === 'vote') { wwrVotes[wwr.peerId] = wwr.selectedTarget; }
-                        if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId);
-                    } else { wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); }
-                    wwr.selectedTarget = null;
-                };
+                const wwrSubmitAction = () => { if (!wwr.selectedTarget) return; if (wwr.isHost) { if (wwr.phase === 'night') { wwrNightActions[wwr.myRole] = wwr.selectedTarget; if (wwr.myRole === 'seer') { wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' }; } } else if (wwr.phase === 'vote') { wwrVotes[wwr.peerId] = wwr.selectedTarget; } if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); } else { wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); } wwr.selectedTarget = null; };
 
                 // ==========================================
                 //  3. リバーシ
@@ -708,68 +699,14 @@
                 const rev = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(64).fill(null), turn: 'black', myColor: '', passMessage: '', winner: '', playerBlackName: '', playerWhiteName: '' });
                 let revPeer = null; const revConnections = {}; let revHostConn = null;
                 const revScore = computed(() => { let b = 0, w = 0; rev.board.forEach(c => { if(c==='black') b++; else if(c==='white') w++; }); return { black: b, white: w }; });
-
-                const revCreateRoom = () => {
-                    rev.myName = globalName.value; const id = generatePrefixedId('R'); revPeer = new Peer(id);
-                    revPeer.on('open', (id) => { rev.peerId = id; rev.roomId = id; rev.isHost = true; rev.screen = 'lobby'; rev.players.push({ id: id, name: rev.myName }); });
-                    revPeer.on('connection', (conn) => {
-                        revConnections[conn.peer] = conn;
-                        conn.on('data', (data) => {
-                            if (data.type === 'join' && rev.players.length < 2) { rev.players.push({ id: conn.peer, name: data.name }); broadcastMap['reversi'](); } 
-                            else if (data.type === 'move') { revExecuteMove(data.index, data.color); }
-                        });
-                        conn.on('close', () => { rev.players = rev.players.filter(p => p.id !== conn.peer); delete revConnections[conn.peer]; broadcastMap['reversi'](); });
-                    });
-                };
-                const revJoinRoom = () => {
-                    revPeer = new Peer();
-                    revPeer.on('open', (id) => {
-                        rev.peerId = id; revHostConn = revPeer.connect(rev.inputRoomId);
-                        revHostConn.on('open', () => { rev.roomId = rev.inputRoomId; revHostConn.send({ type: 'join', name: globalName.value }); rev.screen = 'lobby'; });
-                        revHostConn.on('data', (data) => {
-                            if (data.type === 'joined') { rev.players = data.players; }
-                            else if (data.type === 'start') { rev.myColor = data.color; rev.playerBlackName = data.blackName; rev.playerWhiteName = data.whiteName; rev.board = data.board; rev.turn = 'black'; rev.screen = 'game'; rev.passMessage = ''; }
-                            else if (data.type === 'update') { rev.board = data.board; rev.turn = data.turn; rev.passMessage = data.passMsg || ''; if(data.isEnd) { rev.winner = data.winner; rev.screen = 'result'; } }
-                            else if (data.type === 'back_to_lobby') { rev.screen = 'lobby'; }
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                    });
-                };
-                const revStartGame = () => {
-                    rev.board = Array(64).fill(null); rev.board[27] = 'white'; rev.board[28] = 'black'; rev.board[35] = 'black'; rev.board[36] = 'white'; rev.turn = 'black'; rev.passMessage = '';
-                    const isHostBlack = Math.random() > 0.5; const guestId = rev.players.find(p => p.id !== rev.peerId).id;
-                    rev.myColor = isHostBlack ? 'black' : 'white'; rev.playerBlackName = isHostBlack ? rev.myName : rev.players[1].name; rev.playerWhiteName = isHostBlack ? rev.players[1].name : rev.myName;
-                    if (revConnections[guestId]) { revConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: rev.board, blackName: rev.playerBlackName, whiteName: rev.playerWhiteName }); }
-                    rev.screen = 'game';
-                };
-                const revGetFlippable = (index, color, boardState) => {
-                    if (boardState[index] !== null) return [];
-                    const directions = [-9, -8, -7, -1, 1, 7, 8, 9]; const oppColor = color === 'black' ? 'white' : 'black'; let flippable = [];
-                    directions.forEach(dir => {
-                        let curr = index + dir; let temp = [];
-                        while (curr >= 0 && curr < 64 && !(dir === 1 && curr % 8 === 0) && !(dir === -1 && curr % 8 === 7) && !(dir === 9 && curr % 8 === 0) && !(dir === -9 && curr % 8 === 7) && !(dir === 7 && curr % 8 === 7) && !(dir === -7 && curr % 8 === 0)) {
-                            if (boardState[curr] === oppColor) { temp.push(curr); } else if (boardState[curr] === color) { flippable.push(...temp); break; } else { break; }
-                            curr += dir;
-                        }
-                    });
-                    return flippable;
-                };
+                const revCreateRoom = () => { rev.myName = globalName.value; const id = generatePrefixedId('R'); revPeer = new Peer(id); revPeer.on('open', (id) => { rev.peerId = id; rev.roomId = id; rev.isHost = true; rev.screen = 'lobby'; rev.players.push({ id: id, name: rev.myName, isHost: true }); }); revPeer.on('connection', (conn) => { revConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && rev.players.length < 2) { rev.players.push({ id: conn.peer, name: data.name }); broadcastMap['reversi'](); } else if (data.type === 'move') { revExecuteMove(data.index, data.color); } }); conn.on('close', () => { rev.players = rev.players.filter(p => p.id !== conn.peer); delete revConnections[conn.peer]; broadcastMap['reversi'](); }); }); };
+                const revJoinRoom = () => { revPeer = new Peer(); revPeer.on('open', (id) => { rev.peerId = id; revHostConn = revPeer.connect(rev.inputRoomId); revHostConn.on('open', () => { rev.roomId = rev.inputRoomId; revHostConn.send({ type: 'join', name: globalName.value }); rev.screen = 'lobby'; }); revHostConn.on('data', (data) => { if (data.type === 'joined') { rev.players = data.players; } else if (data.type === 'start') { rev.myColor = data.color; rev.playerBlackName = data.blackName; rev.playerWhiteName = data.whiteName; rev.board = data.board; rev.turn = 'black'; rev.screen = 'game'; rev.passMessage = ''; } else if (data.type === 'update') { rev.board = data.board; rev.turn = data.turn; rev.passMessage = data.passMsg || ''; if(data.isEnd) { rev.winner = data.winner; rev.screen = 'result'; } } else if (data.type === 'back_to_lobby') { rev.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const revStartGame = () => { rev.board = Array(64).fill(null); rev.board[27] = 'white'; rev.board[28] = 'black'; rev.board[35] = 'black'; rev.board[36] = 'white'; rev.turn = 'black'; rev.passMessage = ''; const isHostBlack = Math.random() > 0.5; const guestId = rev.players.find(p => p.id !== rev.peerId).id; rev.myColor = isHostBlack ? 'black' : 'white'; rev.playerBlackName = isHostBlack ? rev.myName : rev.players[1].name; rev.playerWhiteName = isHostBlack ? rev.players[1].name : rev.myName; if (revConnections[guestId]) { revConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: rev.board, blackName: rev.playerBlackName, whiteName: rev.playerWhiteName }); } rev.screen = 'game'; };
+                const revGetFlippable = (index, color, boardState) => { if (boardState[index] !== null) return []; const directions = [-9, -8, -7, -1, 1, 7, 8, 9]; const oppColor = color === 'black' ? 'white' : 'black'; let flippable = []; directions.forEach(dir => { let curr = index + dir; let temp = []; while (curr >= 0 && curr < 64 && !(dir === 1 && curr % 8 === 0) && !(dir === -1 && curr % 8 === 7) && !(dir === 9 && curr % 8 === 0) && !(dir === -9 && curr % 8 === 7) && !(dir === 7 && curr % 8 === 7) && !(dir === -7 && curr % 8 === 0)) { if (boardState[curr] === oppColor) { temp.push(curr); } else if (boardState[curr] === color) { flippable.push(...temp); break; } else { break; } curr += dir; } }); return flippable; };
                 const revIsValidMove = (index, color) => revGetFlippable(index, color, rev.board).length > 0;
                 const revHasValidMove = (color) => rev.board.some((_, i) => revIsValidMove(i, color));
-                const revPlaceDisc = (index) => {
-                    if (rev.turn !== rev.myColor) return;
-                    if (rev.isHost) revExecuteMove(index, rev.myColor); else revHostConn.send({ type: 'move', index: index, color: rev.myColor });
-                };
-                const revExecuteMove = (index, color) => {
-                    const flips = revGetFlippable(index, color, rev.board); if (flips.length === 0) return;
-                    rev.board[index] = color; flips.forEach(i => rev.board[i] = color);
-                    let nextTurn = color === 'black' ? 'white' : 'black'; let passMsg = ''; let isEnd = false; let winner = '';
-                    if (!revHasValidMove(nextTurn)) { passMsg = `${nextTurn === 'black' ? '黒' : '白'}は置ける場所がないためパスです`; nextTurn = color; if (!revHasValidMove(nextTurn)) { isEnd = true; passMsg = '両者置けないためゲーム終了です'; } }
-                    if (rev.board.filter(c => c === null).length === 0) isEnd = true;
-                    if (isEnd) { const s = revScore.value; if (s.black > s.white) winner = 'black'; else if (s.white > s.black) winner = 'white'; else winner = 'draw'; rev.winner = winner; rev.screen = 'result'; }
-                    rev.turn = nextTurn; rev.passMessage = passMsg;
-                    Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: rev.board, turn: rev.turn, passMsg: passMsg, isEnd: isEnd, winner: winner }); });
-                };
+                const revPlaceDisc = (index) => { if (rev.turn !== rev.myColor) return; if (rev.isHost) revExecuteMove(index, rev.myColor); else revHostConn.send({ type: 'move', index: index, color: rev.myColor }); };
+                const revExecuteMove = (index, color) => { const flips = revGetFlippable(index, color, rev.board); if (flips.length === 0) return; rev.board[index] = color; flips.forEach(i => rev.board[i] = color); let nextTurn = color === 'black' ? 'white' : 'black'; let passMsg = ''; let isEnd = false; let winner = ''; if (!revHasValidMove(nextTurn)) { passMsg = `${nextTurn === 'black' ? '黒' : '白'}は置ける場所がないためパスです`; nextTurn = color; if (!revHasValidMove(nextTurn)) { isEnd = true; passMsg = '両者置けないためゲーム終了です'; } } if (rev.board.filter(c => c === null).length === 0) isEnd = true; if (isEnd) { const s = revScore.value; if (s.black > s.white) winner = 'black'; else if (s.white > s.black) winner = 'white'; else winner = 'draw'; rev.winner = winner; rev.screen = 'result'; } rev.turn = nextTurn; rev.passMessage = passMsg; Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: rev.board, turn: rev.turn, passMsg: passMsg, isEnd: isEnd, winner: winner }); }); };
                 const revBackToLobby = () => { rev.screen = 'lobby'; Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
                 // ==========================================
@@ -779,70 +716,12 @@
                 let chsPeer = null; const chsConnections = {}; let chsHostConn = null;
                 const chsInitialBoard = [ 'bR','bN','bB','bQ','bK','bB','bN','bR', 'bP','bP','bP','bP','bP','bP','bP','bP', null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, 'wP','wP','wP','wP','wP','wP','wP','wP', 'wR','wN','wB','wQ','wK','wB','wN','wR' ];
                 const chsGetPieceChar = (piece) => { const chars = { 'wK':'♔', 'wQ':'♕', 'wR':'♖', 'wB':'♗', 'wN':'♘', 'wP':'♙', 'bK':'♚', 'bQ':'♛', 'bR':'♜', 'bB':'♝', 'bN':'♞', 'bP':'♟' }; return chars[piece] || ''; };
-                const chsCreateRoom = () => {
-                    chs.myName = globalName.value; const id = generatePrefixedId('C'); chsPeer = new Peer(id);
-                    chsPeer.on('open', (id) => { chs.peerId = id; chs.roomId = id; chs.isHost = true; chs.screen = 'lobby'; chs.players.push({ id: id, name: chs.myName }); });
-                    chsPeer.on('connection', (conn) => {
-                        chsConnections[conn.peer] = conn;
-                        conn.on('data', (data) => {
-                            if (data.type === 'join' && chs.players.length < 2) { chs.players.push({ id: conn.peer, name: data.name }); broadcastMap['chess'](); } 
-                            else if (data.type === 'move') { chsExecuteMove(data.from, data.to); }
-                        });
-                        conn.on('close', () => { chs.players = chs.players.filter(p => p.id !== conn.peer); delete chsConnections[conn.peer]; broadcastMap['chess'](); });
-                    });
-                };
-                const chsJoinRoom = () => {
-                    chsPeer = new Peer();
-                    chsPeer.on('open', (id) => {
-                        chs.peerId = id; chsHostConn = chsPeer.connect(chs.inputRoomId);
-                        chsHostConn.on('open', () => { chs.roomId = chs.inputRoomId; chsHostConn.send({ type: 'join', name: globalName.value }); chs.screen = 'lobby'; });
-                        chsHostConn.on('data', (data) => {
-                            if (data.type === 'joined') { chs.players = data.players; }
-                            else if (data.type === 'start') { chs.myColor = data.color; chs.playerWhiteName = data.whiteName; chs.playerBlackName = data.blackName; chs.board = data.board; chs.turn = 'w'; chs.screen = 'game'; }
-                            else if (data.type === 'update') { chs.board = data.board; chs.turn = data.turn; if(data.isEnd) { chs.winner = data.winner; chs.screen = 'result'; } }
-                            else if (data.type === 'back_to_lobby') { chs.screen = 'lobby'; }
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                    });
-                };
-                const chsStartGame = () => {
-                    chs.board = [...chsInitialBoard]; chs.turn = 'w';
-                    const isHostWhite = Math.random() > 0.5; const guestId = chs.players.find(p => p.id !== chs.peerId).id;
-                    chs.myColor = isHostWhite ? 'w' : 'b'; chs.playerWhiteName = isHostWhite ? chs.myName : chs.players[1].name; chs.playerBlackName = isHostWhite ? chs.players[1].name : chs.myName;
-                    if (chsConnections[guestId]) chsConnections[guestId].send({ type: 'start', color: isHostWhite ? 'b' : 'w', board: chs.board, whiteName: chs.playerWhiteName, blackName: chs.playerBlackName });
-                    chs.screen = 'game';
-                };
-                const chsGetValidMoves = (index, board) => {
-                    const piece = board[index]; if (!piece) return [];
-                    const color = piece[0]; const type = piece[1]; const row = Math.floor(index / 8); const col = index % 8; const moves = [];
-                    const addIfValid = (r, c) => { if(r<0||r>7||c<0||c>7) return false; const target = board[r*8+c]; if(!target) { moves.push(r*8+c); return true; } if(target[0] !== color) { moves.push(r*8+c); } return false; };
-                    const slide = (dirs) => { dirs.forEach(([dr, dc]) => { let r = row + dr, c = col + dc; while(r>=0&&r<=7&&c>=0&&c<=7) { if(!addIfValid(r,c)) break; if(board[r*8+c]) break; r += dr; c += dc; } }); };
-                    if(type === 'P') {
-                        const dir = color === 'w' ? -1 : 1;
-                        if(row+dir>=0 && row+dir<=7 && !board[(row+dir)*8+col]) { moves.push((row+dir)*8+col); if((color === 'w' && row === 6) || (color === 'b' && row === 1)) { if(!board[(row+dir*2)*8+col]) moves.push((row+dir*2)*8+col); } }
-                        if(col>0 && board[(row+dir)*8+(col-1)] && board[(row+dir)*8+(col-1)][0] !== color && board[(row+dir)*8+(col-1)]) moves.push((row+dir)*8+(col-1));
-                        if(col<7 && board[(row+dir)*8+(col+1)] && board[(row+dir)*8+(col+1)][0] !== color && board[(row+dir)*8+(col+1)]) moves.push((row+dir)*8+(col+1));
-                    } 
-                    else if(type === 'N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); }
-                    else if(type === 'B') { slide([[-1,-1],[-1,1],[1,-1],[1,1]]); } else if(type === 'R') { slide([[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'Q') { slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'K') { [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); }
-                    return moves;
-                };
-                const chsClickCell = (index) => {
-                    if(chs.turn !== chs.myColor) return;
-                    if(chs.validMoves.includes(index)) {
-                        if(chs.isHost) chsExecuteMove(chs.selectedIndex, index); else chsHostConn.send({ type: 'move', from: chs.selectedIndex, to: index });
-                        chs.selectedIndex = null; chs.validMoves = [];
-                    } else if (chs.board[index] && chs.board[index][0] === chs.myColor) { chs.selectedIndex = index; chs.validMoves = chsGetValidMoves(index, chs.board); } else { chs.selectedIndex = null; chs.validMoves = []; }
-                };
-                const chsExecuteMove = (from, to) => {
-                    const piece = chs.board[from]; const targetPiece = chs.board[to];
-                    let newPiece = piece; if (piece[1] === 'P' && (Math.floor(to / 8) === 0 || Math.floor(to / 8) === 7)) { newPiece = piece[0] + 'Q'; }
-                    chs.board[to] = newPiece; chs.board[from] = null;
-                    let isEnd = false; let winner = ''; if (targetPiece && targetPiece[1] === 'K') { isEnd = true; winner = chs.turn; } 
-                    chs.turn = chs.turn === 'w' ? 'b' : 'w';
-                    if (isEnd) { chs.winner = winner; chs.screen = 'result'; }
-                    Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: chs.board, turn: chs.turn, isEnd: isEnd, winner: winner }); });
-                };
+                const chsCreateRoom = () => { chs.myName = globalName.value; const id = generatePrefixedId('C'); chsPeer = new Peer(id); chsPeer.on('open', (id) => { chs.peerId = id; chs.roomId = id; chs.isHost = true; chs.screen = 'lobby'; chs.players.push({ id: id, name: chs.myName, isHost: true }); }); chsPeer.on('connection', (conn) => { chsConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && chs.players.length < 2) { chs.players.push({ id: conn.peer, name: data.name }); broadcastMap['chess'](); } else if (data.type === 'move') { chsExecuteMove(data.from, data.to); } }); conn.on('close', () => { chs.players = chs.players.filter(p => p.id !== conn.peer); delete chsConnections[conn.peer]; broadcastMap['chess'](); }); }); };
+                const chsJoinRoom = () => { chsPeer = new Peer(); chsPeer.on('open', (id) => { chs.peerId = id; chsHostConn = chsPeer.connect(chs.inputRoomId); chsHostConn.on('open', () => { chs.roomId = chs.inputRoomId; chsHostConn.send({ type: 'join', name: globalName.value }); chs.screen = 'lobby'; }); chsHostConn.on('data', (data) => { if (data.type === 'joined') { chs.players = data.players; } else if (data.type === 'start') { chs.myColor = data.color; chs.playerWhiteName = data.whiteName; chs.playerBlackName = data.blackName; chs.board = data.board; chs.turn = 'w'; chs.screen = 'game'; } else if (data.type === 'update') { chs.board = data.board; chs.turn = data.turn; if(data.isEnd) { chs.winner = data.winner; chs.screen = 'result'; } } else if (data.type === 'back_to_lobby') { chs.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const chsStartGame = () => { chs.board = [...chsInitialBoard]; chs.turn = 'w'; const isHostWhite = Math.random() > 0.5; const guestId = chs.players.find(p => p.id !== chs.peerId).id; chs.myColor = isHostWhite ? 'w' : 'b'; chs.playerWhiteName = isHostWhite ? chs.myName : chs.players[1].name; chs.playerBlackName = isHostWhite ? chs.players[1].name : chs.myName; if (chsConnections[guestId]) chsConnections[guestId].send({ type: 'start', color: isHostWhite ? 'b' : 'w', board: chs.board, whiteName: chs.playerWhiteName, blackName: chs.playerBlackName }); chs.screen = 'game'; };
+                const chsGetValidMoves = (index, board) => { const piece = board[index]; if (!piece) return []; const color = piece[0]; const type = piece[1]; const row = Math.floor(index / 8); const col = index % 8; const moves = []; const addIfValid = (r, c) => { if(r<0||r>7||c<0||c>7) return false; const target = board[r*8+c]; if(!target) { moves.push(r*8+c); return true; } if(target[0] !== color) { moves.push(r*8+c); } return false; }; const slide = (dirs) => { dirs.forEach(([dr, dc]) => { let r = row + dr, c = col + dc; while(r>=0&&r<=7&&c>=0&&c<=7) { if(!addIfValid(r,c)) break; if(board[r*8+c]) break; r += dr; c += dc; } }); }; if(type === 'P') { const dir = color === 'w' ? -1 : 1; if(row+dir>=0 && row+dir<=7 && !board[(row+dir)*8+col]) { moves.push((row+dir)*8+col); if((color === 'w' && row === 6) || (color === 'b' && row === 1)) { if(!board[(row+dir*2)*8+col]) moves.push((row+dir*2)*8+col); } } if(col>0 && board[(row+dir)*8+(col-1)] && board[(row+dir)*8+(col-1)][0] !== color && board[(row+dir)*8+(col-1)]) moves.push((row+dir)*8+(col-1)); if(col<7 && board[(row+dir)*8+(col+1)] && board[(row+dir)*8+(col+1)][0] !== color && board[(row+dir)*8+(col+1)]) moves.push((row+dir)*8+(col+1)); } else if(type === 'N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); } else if(type === 'B') { slide([[-1,-1],[-1,1],[1,-1],[1,1]]); } else if(type === 'R') { slide([[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'Q') { slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'K') { [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); } return moves; };
+                const chsClickCell = (index) => { if(chs.turn !== chs.myColor) return; if(chs.validMoves.includes(index)) { if(chs.isHost) chsExecuteMove(chs.selectedIndex, index); else chsHostConn.send({ type: 'move', from: chs.selectedIndex, to: index }); chs.selectedIndex = null; chs.validMoves = []; } else if (chs.board[index] && chs.board[index][0] === chs.myColor) { chs.selectedIndex = index; chs.validMoves = chsGetValidMoves(index, chs.board); } else { chs.selectedIndex = null; chs.validMoves = []; } };
+                const chsExecuteMove = (from, to) => { const piece = chs.board[from]; const targetPiece = chs.board[to]; let newPiece = piece; if (piece[1] === 'P' && (Math.floor(to / 8) === 0 || Math.floor(to / 8) === 7)) { newPiece = piece[0] + 'Q'; } chs.board[to] = newPiece; chs.board[from] = null; let isEnd = false; let winner = ''; if (targetPiece && targetPiece[1] === 'K') { isEnd = true; winner = chs.turn; } chs.turn = chs.turn === 'w' ? 'b' : 'w'; if (isEnd) { chs.winner = winner; chs.screen = 'result'; } Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: chs.board, turn: chs.turn, isEnd: isEnd, winner: winner }); }); };
                 const chsBackToLobby = () => { chs.screen = 'lobby'; Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
                 // ==========================================
@@ -850,172 +729,96 @@
                 // ==========================================
                 const gom = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(225).fill(null), turn: 'black', myColor: '', winner: '', playerBlackName: '', playerWhiteName: '' });
                 let gomPeer = null; const gomConnections = {}; let gomHostConn = null;
-
-                const gomCreateRoom = () => {
-                    gom.myName = globalName.value; const id = generatePrefixedId('G'); gomPeer = new Peer(id);
-                    gomPeer.on('open', (id) => { gom.peerId = id; gom.roomId = id; gom.isHost = true; gom.screen = 'lobby'; gom.players.push({ id: id, name: gom.myName }); });
-                    gomPeer.on('connection', (conn) => {
-                        gomConnections[conn.peer] = conn;
-                        conn.on('data', (data) => {
-                            if (data.type === 'join' && gom.players.length < 2) { gom.players.push({ id: conn.peer, name: data.name }); broadcastMap['gomoku'](); } 
-                            else if (data.type === 'move') { gomExecuteMove(data.index, data.color); }
-                        });
-                        conn.on('close', () => { gom.players = gom.players.filter(p => p.id !== conn.peer); delete gomConnections[conn.peer]; broadcastMap['gomoku'](); });
-                    });
-                };
-                const gomJoinRoom = () => {
-                    gomPeer = new Peer();
-                    gomPeer.on('open', (id) => {
-                        gom.peerId = id; gomHostConn = gomPeer.connect(gom.inputRoomId);
-                        gomHostConn.on('open', () => { gom.roomId = gom.inputRoomId; gomHostConn.send({ type: 'join', name: globalName.value }); gom.screen = 'lobby'; });
-                        gomHostConn.on('data', (data) => {
-                            if (data.type === 'joined') { gom.players = data.players; }
-                            else if (data.type === 'start') { gom.myColor = data.color; gom.playerBlackName = data.blackName; gom.playerWhiteName = data.whiteName; gom.board = data.board; gom.turn = 'black'; gom.screen = 'game'; }
-                            else if (data.type === 'update') { gom.board = data.board; gom.turn = data.turn; if(data.isEnd) { gom.winner = data.winner; gom.screen = 'result'; } }
-                            else if (data.type === 'back_to_lobby') { gom.screen = 'lobby'; }
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                    });
-                };
-                const gomStartGame = () => {
-                    gom.board = Array(225).fill(null); gom.turn = 'black';
-                    const isHostBlack = Math.random() > 0.5; const guestId = gom.players.find(p => p.id !== gom.peerId).id;
-                    gom.myColor = isHostBlack ? 'black' : 'white'; gom.playerBlackName = isHostBlack ? gom.myName : gom.players[1].name; gom.playerWhiteName = isHostBlack ? gom.players[1].name : gom.myName;
-                    if (gomConnections[guestId]) gomConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: gom.board, blackName: gom.playerBlackName, whiteName: gom.playerWhiteName });
-                    gom.screen = 'game';
-                };
-                const gomCheckWin = (index, color) => {
-                    const r = Math.floor(index/15); const c = index%15; const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-                    for(let [dr,dc] of dirs) {
-                        let count = 1;
-                        for(let i=1; i<=4; i++) { let nr = r+dr*i, nc = c+dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; }
-                        for(let i=1; i<=4; i++) { let nr = r-dr*i, nc = c-dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; }
-                        if(count >= 5) return true;
-                    }
-                    return false;
-                };
-                const gomPlaceStone = (index) => {
-                    if(gom.turn !== gom.myColor || gom.board[index] !== null) return;
-                    if(gom.isHost) gomExecuteMove(index, gom.myColor); else gomHostConn.send({ type: 'move', index: index, color: gom.myColor });
-                };
-                const gomExecuteMove = (index, color) => {
-                    gom.board[index] = color;
-                    let isEnd = false; let winner = '';
-                    if(gomCheckWin(index, color)) { isEnd = true; winner = color; }
-                    gom.turn = color === 'black' ? 'white' : 'black';
-                    if (isEnd) { gom.winner = winner; gom.screen = 'result'; }
-                    Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: gom.board, turn: gom.turn, isEnd: isEnd, winner: winner }); });
-                };
+                const gomCreateRoom = () => { gom.myName = globalName.value; const id = generatePrefixedId('G'); gomPeer = new Peer(id); gomPeer.on('open', (id) => { gom.peerId = id; gom.roomId = id; gom.isHost = true; gom.screen = 'lobby'; gom.players.push({ id: id, name: gom.myName, isHost: true }); }); gomPeer.on('connection', (conn) => { gomConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && gom.players.length < 2) { gom.players.push({ id: conn.peer, name: data.name }); broadcastMap['gomoku'](); } else if (data.type === 'move') { gomExecuteMove(data.index, data.color); } }); conn.on('close', () => { gom.players = gom.players.filter(p => p.id !== conn.peer); delete gomConnections[conn.peer]; broadcastMap['gomoku'](); }); }); };
+                const gomJoinRoom = () => { gomPeer = new Peer(); gomPeer.on('open', (id) => { gom.peerId = id; gomHostConn = gomPeer.connect(gom.inputRoomId); gomHostConn.on('open', () => { gom.roomId = gom.inputRoomId; gomHostConn.send({ type: 'join', name: globalName.value }); gom.screen = 'lobby'; }); gomHostConn.on('data', (data) => { if (data.type === 'joined') { gom.players = data.players; } else if (data.type === 'start') { gom.myColor = data.color; gom.playerBlackName = data.blackName; gom.playerWhiteName = data.whiteName; gom.board = data.board; gom.turn = 'black'; gom.screen = 'game'; } else if (data.type === 'update') { gom.board = data.board; gom.turn = data.turn; if(data.isEnd) { gom.winner = data.winner; gom.screen = 'result'; } } else if (data.type === 'back_to_lobby') { gom.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const gomStartGame = () => { gom.board = Array(225).fill(null); gom.turn = 'black'; const isHostBlack = Math.random() > 0.5; const guestId = gom.players.find(p => p.id !== gom.peerId).id; gom.myColor = isHostBlack ? 'black' : 'white'; gom.playerBlackName = isHostBlack ? gom.myName : gom.players[1].name; gom.playerWhiteName = isHostBlack ? gom.players[1].name : gom.myName; if (gomConnections[guestId]) gomConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: gom.board, blackName: gom.playerBlackName, whiteName: gom.playerWhiteName }); gom.screen = 'game'; };
+                const gomCheckWin = (index, color) => { const r = Math.floor(index/15); const c = index%15; const dirs = [[1,0],[0,1],[1,1],[1,-1]]; for(let [dr,dc] of dirs) { let count = 1; for(let i=1; i<=4; i++) { let nr = r+dr*i, nc = c+dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; } for(let i=1; i<=4; i++) { let nr = r-dr*i, nc = c-dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; } if(count >= 5) return true; } return false; };
+                const gomPlaceStone = (index) => { if(gom.turn !== gom.myColor || gom.board[index] !== null) return; if(gom.isHost) gomExecuteMove(index, gom.myColor); else gomHostConn.send({ type: 'move', index: index, color: gom.myColor }); };
+                const gomExecuteMove = (index, color) => { gom.board[index] = color; let isEnd = false; let winner = ''; if(gomCheckWin(index, color)) { isEnd = true; winner = color; } gom.turn = color === 'black' ? 'white' : 'black'; if (isEnd) { gom.winner = winner; gom.screen = 'result'; } Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: gom.board, turn: gom.turn, isEnd: isEnd, winner: winner }); }); };
                 const gomBackToLobby = () => { gom.screen = 'lobby'; Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
 
                 // ==========================================
                 //  6. お絵かき伝言ゲーム
                 // ==========================================
                 const drw = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], turn: 0, totalTurns: 0, myInputTheme: '', myInputGuess: '', hasSubmitted: false, currentTaskText: '', currentTaskImage: '', albums: [], currentAlbumIndex: 0, penColor: '#000000', penWidth: 5, isDrawing: false });
-                let drwPeer = null; const drwConnections = {}; let drwHostConn = null;
-                let drwMasterData = []; let drwPlayerOrder = [];
-
-                const drwCreateRoom = () => {
-                    drw.myName = globalName.value; const id = generatePrefixedId('D'); drwPeer = new Peer(id);
-                    drwPeer.on('open', (id) => { drw.peerId = id; drw.roomId = id; drw.isHost = true; drw.screen = 'lobby'; drw.players.push({ id: id, name: drw.myName }); });
-                    drwPeer.on('connection', (conn) => {
-                        drwConnections[conn.peer] = conn;
-                        conn.on('data', (data) => {
-                            if (data.type === 'join') { drw.players.push({ id: conn.peer, name: data.name }); broadcastMap['draw'](); } 
-                            else if (data.type === 'submit_theme') { drwHandleSubmission(conn.peer, 'theme', data.theme); }
-                            else if (data.type === 'submit_draw') { drwHandleSubmission(conn.peer, 'draw', data.image); }
-                            else if (data.type === 'submit_guess') { drwHandleSubmission(conn.peer, 'guess', data.guess); }
-                        });
-                        conn.on('close', () => { drw.players = drw.players.filter(p => p.id !== conn.peer); delete drwConnections[conn.peer]; broadcastMap['draw'](); });
-                    });
-                };
-                const drwJoinRoom = () => {
-                    drwPeer = new Peer();
-                    drwPeer.on('open', (id) => {
-                        drw.peerId = id; drwHostConn = drwPeer.connect(drw.inputRoomId);
-                        drwHostConn.on('open', () => { drw.roomId = drw.inputRoomId; drwHostConn.send({ type: 'join', name: globalName.value }); drw.screen = 'lobby'; });
-                        drwHostConn.on('data', (data) => {
-                            if (data.type === 'players') { drw.players = data.players; }
-                            else if (data.type === 'start') { drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = ''; }
-                            else if (data.type === 'next_turn') {
-                                drw.hasSubmitted = false;
-                                if (data.taskType === 'draw') { drw.currentTaskText = data.taskData; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); } 
-                                else if (data.taskType === 'guess') { drw.currentTaskImage = data.taskData; drw.myInputGuess = ''; drw.screen = 'guess_turn'; }
-                            }
-                            else if (data.type === 'result') { drw.albums = data.albums; drw.currentAlbumIndex = 0; drw.screen = 'result'; }
-                            else if (data.type === 'back_to_lobby') { drw.screen = 'lobby'; }
-                            else if (data.type === 'kicked') handleKicked();
-                        });
-                    });
-                };
-                
-                const drwStartGame = () => {
-                    drwPlayerOrder = drw.players.map(p => p.id).sort(() => Math.random() - 0.5);
-                    drw.totalTurns = drw.players.length; drw.turn = 1;
-                    drwMasterData = drwPlayerOrder.map(() => ({ history: [] }));
-                    drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = '';
-                    Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'start' }); });
-                };
-
+                let drwPeer = null; const drwConnections = {}; let drwHostConn = null; let drwMasterData = []; let drwPlayerOrder = [];
+                const drwCreateRoom = () => { drw.myName = globalName.value; const id = generatePrefixedId('D'); drwPeer = new Peer(id); drwPeer.on('open', (id) => { drw.peerId = id; drw.roomId = id; drw.isHost = true; drw.screen = 'lobby'; drw.players.push({ id: id, name: drw.myName, isHost: true }); }); drwPeer.on('connection', (conn) => { drwConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { drw.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['draw'](); } else if (data.type === 'submit_theme') { drwHandleSubmission(conn.peer, 'theme', data.theme); } else if (data.type === 'submit_draw') { drwHandleSubmission(conn.peer, 'draw', data.image); } else if (data.type === 'submit_guess') { drwHandleSubmission(conn.peer, 'guess', data.guess); } }); conn.on('close', () => { drw.players = drw.players.filter(p => p.id !== conn.peer); delete drwConnections[conn.peer]; broadcastMap['draw'](); }); }); };
+                const drwJoinRoom = () => { drwPeer = new Peer(); drwPeer.on('open', (id) => { drw.peerId = id; drwHostConn = drwPeer.connect(drw.inputRoomId); drwHostConn.on('open', () => { drw.roomId = drw.inputRoomId; drwHostConn.send({ type: 'join', name: globalName.value }); drw.screen = 'lobby'; }); drwHostConn.on('data', (data) => { if (data.type === 'players') { drw.players = data.players; } else if (data.type === 'start') { drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = ''; } else if (data.type === 'next_turn') { drw.hasSubmitted = false; if (data.taskType === 'draw') { drw.currentTaskText = data.taskData; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); } else if (data.taskType === 'guess') { drw.currentTaskImage = data.taskData; drw.myInputGuess = ''; drw.screen = 'guess_turn'; } } else if (data.type === 'result') { drw.albums = data.albums; drw.currentAlbumIndex = 0; drw.screen = 'result'; } else if (data.type === 'back_to_lobby') { drw.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const drwStartGame = () => { drwPlayerOrder = drw.players.map(p => p.id).sort(() => Math.random() - 0.5); drw.totalTurns = drw.players.length; drw.turn = 1; drwMasterData = drwPlayerOrder.map(() => ({ history: [] })); drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = ''; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'start' }); }); };
                 let drwSubmissions = 0;
-                const drwHandleSubmission = (playerId, type, data) => {
-                    const playerIndex = drwPlayerOrder.indexOf(playerId);
-                    const albumIndex = (playerIndex + drw.turn - 1) % drw.players.length;
-                    const playerName = drw.players.find(p=>p.id===playerId).name;
-                    drwMasterData[albumIndex].history.push({ type: type, data: data, playerId: playerId, playerName: playerName });
-                    drwSubmissions++;
-                    if (drwSubmissions >= drw.players.length) {
-                        drwSubmissions = 0; drw.turn++;
-                        if (drw.turn > drw.totalTurns) {
-                            drw.albums = drwMasterData; drw.currentAlbumIndex = 0; drw.screen = 'result';
-                            Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'result', albums: drwMasterData }); });
-                        } else {
-                            const isDrawTurn = drw.turn % 2 === 0;
-                            drwPlayerOrder.forEach((pid, idx) => {
-                                const targetAlbumIndex = (idx + drw.turn - 1) % drw.players.length;
-                                const prevStep = drwMasterData[targetAlbumIndex].history[drwMasterData[targetAlbumIndex].history.length - 1];
-                                const msg = { type: 'next_turn', taskType: isDrawTurn ? 'draw' : 'guess', taskData: prevStep.data };
-                                if (pid === drw.peerId) {
-                                    drw.hasSubmitted = false;
-                                    if (isDrawTurn) { drw.currentTaskText = prevStep.data; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); }
-                                    else { drw.currentTaskImage = prevStep.data; drw.myInputGuess = ''; drw.screen = 'guess_turn'; }
-                                } else { if (drwConnections[pid]) drwConnections[pid].send(msg); }
-                            });
-                        }
-                    }
-                };
+                const drwHandleSubmission = (playerId, type, data) => { const playerIndex = drwPlayerOrder.indexOf(playerId); const albumIndex = (playerIndex + drw.turn - 1) % drw.players.length; const playerName = drw.players.find(p=>p.id===playerId).name; drwMasterData[albumIndex].history.push({ type: type, data: data, playerId: playerId, playerName: playerName }); drwSubmissions++; if (drwSubmissions >= drw.players.length) { drwSubmissions = 0; drw.turn++; if (drw.turn > drw.totalTurns) { drw.albums = drwMasterData; drw.currentAlbumIndex = 0; drw.screen = 'result'; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'result', albums: drwMasterData }); }); } else { const isDrawTurn = drw.turn % 2 === 0; drwPlayerOrder.forEach((pid, idx) => { const targetAlbumIndex = (idx + drw.turn - 1) % drw.players.length; const prevStep = drwMasterData[targetAlbumIndex].history[drwMasterData[targetAlbumIndex].history.length - 1]; const msg = { type: 'next_turn', taskType: isDrawTurn ? 'draw' : 'guess', taskData: prevStep.data }; if (pid === drw.peerId) { drw.hasSubmitted = false; if (isDrawTurn) { drw.currentTaskText = prevStep.data; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); } else { drw.currentTaskImage = prevStep.data; drw.myInputGuess = ''; drw.screen = 'guess_turn'; } } else { if (drwConnections[pid]) drwConnections[pid].send(msg); } }); } } };
                 const drwSubmitTheme = () => { drw.hasSubmitted = true; if(drw.isHost) drwHandleSubmission(drw.peerId, 'theme', drw.myInputTheme); else drwHostConn.send({ type: 'submit_theme', theme: drw.myInputTheme }); };
                 const drwSubmitGuess = () => { drw.hasSubmitted = true; if(drw.isHost) drwHandleSubmission(drw.peerId, 'guess', drw.myInputGuess); else drwHostConn.send({ type: 'submit_guess', guess: drw.myInputGuess }); };
-                const drwSubmitDrawing = () => {
-                    drw.hasSubmitted = true; const canvas = document.getElementById('draw-canvas');
-                    const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
-                    const ctx = tempCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,tempCanvas.width,tempCanvas.height); ctx.drawImage(canvas,0,0);
-                    const imgData = tempCanvas.toDataURL('image/jpeg', 0.8);
-                    if(drw.isHost) drwHandleSubmission(drw.peerId, 'draw', imgData); else drwHostConn.send({ type: 'submit_draw', image: imgData });
-                };
-
+                const drwSubmitDrawing = () => { drw.hasSubmitted = true; const canvas = document.getElementById('draw-canvas'); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvas.width; tempCanvas.height = canvas.height; const ctx = tempCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,tempCanvas.width,tempCanvas.height); ctx.drawImage(canvas,0,0); const imgData = tempCanvas.toDataURL('image/jpeg', 0.8); if(drw.isHost) drwHandleSubmission(drw.peerId, 'draw', imgData); else drwHostConn.send({ type: 'submit_draw', image: imgData }); };
                 let ctx = null; let lastX = 0; let lastY = 0;
-                const drwInitCanvas = () => {
-                    const canvas = document.getElementById('draw-canvas'); if (!canvas) return;
-                    const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height;
-                    ctx = canvas.getContext('2d'); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-                };
-                const drwGetPos = (e) => {
-                    const canvas = document.getElementById('draw-canvas'); const rect = canvas.getBoundingClientRect();
-                    const clientX = e.clientX || (e.touches && e.touches[0].clientX); const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                    return [clientX - rect.left, clientY - rect.top];
-                };
-                const drwStartDraw = (e) => { drw.isDrawing = true; [lastX, lastY] = drwGetPos(e); };
-                const drwStartDrawTouch = (e) => { e.preventDefault(); drwStartDraw(e); };
-                const drwDraw = (e) => {
-                    if (!drw.isDrawing || !ctx) return; const [x, y] = drwGetPos(e);
-                    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.strokeStyle = drw.penColor; ctx.lineWidth = drw.penWidth; ctx.stroke();
-                    [lastX, lastY] = [x, y];
-                };
-                const drwDrawTouch = (e) => { e.preventDefault(); drwDraw(e); };
-                const drwEndDraw = () => { drw.isDrawing = false; };
+                const drwInitCanvas = () => { const canvas = document.getElementById('draw-canvas'); if (!canvas) return; const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; ctx = canvas.getContext('2d'); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); };
+                const drwGetPos = (e) => { const canvas = document.getElementById('draw-canvas'); const rect = canvas.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0].clientX); const clientY = e.clientY || (e.touches && e.touches[0].clientY); return [clientX - rect.left, clientY - rect.top]; };
+                const drwStartDraw = (e) => { drw.isDrawing = true; [lastX, lastY] = drwGetPos(e); }; const drwStartDrawTouch = (e) => { e.preventDefault(); drwStartDraw(e); };
+                const drwDraw = (e) => { if (!drw.isDrawing || !ctx) return; const [x, y] = drwGetPos(e); ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.strokeStyle = drw.penColor; ctx.lineWidth = drw.penWidth; ctx.stroke(); [lastX, lastY] = [x, y]; };
+                const drwDrawTouch = (e) => { e.preventDefault(); drwDraw(e); }; const drwEndDraw = () => { drw.isDrawing = false; };
                 const drwBackToLobby = () => { drw.screen = 'lobby'; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
+
+                // ==========================================
+                //  7. 💯 シンクロ・パーセント (NEW)
+                // ==========================================
+                const sncThemeList = [
+                    '1=弱い動物, 100=強い動物', '1=行きたくない場所, 100=行きたい場所', '1=安い, 100=高い (買い物の価値観)', 
+                    '1=まずい, 100=おいしい (給食のメニュー)', '1=無人島に持っていきたくない, 100=持っていきたい',
+                    '1=子供向け, 100=大人向け (アニメや映画)', '1=テンションが下がる, 100=テンションが上がる (日常の出来事)'
+                ];
+                const snc = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], myNumber: 0, currentTheme: '', resultData: [] });
+                let sncPeer = null; const sncConnections = {}; let sncHostConn = null;
+
+                const sncCreateRoom = () => { snc.myName = globalName.value; const id = generatePrefixedId('S'); sncPeer = new Peer(id); sncPeer.on('open', (id) => { snc.peerId = id; snc.roomId = id; snc.isHost = true; snc.screen = 'lobby'; snc.players.push({ id: id, name: snc.myName, isHost: true }); }); sncPeer.on('connection', (conn) => { sncConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { snc.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['synchro'](); } }); conn.on('close', () => { snc.players = snc.players.filter(p => p.id !== conn.peer); delete sncConnections[conn.peer]; broadcastMap['synchro'](); }); }); };
+                const sncJoinRoom = () => { sncPeer = new Peer(); sncPeer.on('open', (id) => { snc.peerId = id; sncHostConn = sncPeer.connect(snc.inputRoomId); sncHostConn.on('open', () => { snc.roomId = snc.inputRoomId; sncHostConn.send({ type: 'join', name: globalName.value }); snc.screen = 'lobby'; }); sncHostConn.on('data', (data) => { if (data.type === 'players') { snc.players = data.players; } else if (data.type === 'start') { snc.myNumber = data.myNumber; snc.currentTheme = data.theme; snc.screen = 'game'; } else if (data.type === 'result') { snc.resultData = data.resultData; snc.screen = 'result'; } else if (data.type === 'back_to_lobby') { snc.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const sncStartGame = () => {
+                    const theme = sncThemeList[Math.floor(Math.random() * sncThemeList.length)];
+                    let numbers = []; while(numbers.length < snc.players.length) { let r = Math.floor(Math.random() * 100) + 1; if(numbers.indexOf(r) === -1) numbers.push(r); }
+                    snc.currentTheme = theme; snc.resultData = [];
+                    snc.players.forEach((p, idx) => {
+                        snc.resultData.push({ id: p.id, name: p.name, number: numbers[idx] });
+                        if(p.id === snc.peerId) { snc.myNumber = numbers[idx]; } 
+                        else if (sncConnections[p.id]) { sncConnections[p.id].send({ type: 'start', myNumber: numbers[idx], theme: theme }); }
+                    });
+                    snc.screen = 'game';
+                };
+                const sncEndGame = () => {
+                    snc.resultData.sort((a, b) => b.number - a.number); // 大きい順に並べる (画面では上から表示)
+                    Object.values(sncConnections).forEach(c => { if(c.open) c.send({ type: 'result', resultData: snc.resultData }); });
+                    snc.screen = 'result';
+                };
+                const sncBackToLobby = () => { snc.screen = 'lobby'; Object.values(sncConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
+
+                // ==========================================
+                //  8. 🃏 ブラインド・ナンバー (NEW)
+                // ==========================================
+                const bndDeck = [20, 15, 10, 10, 5, 5, 5, 4, 3, 2, 1, 0, -5, -10, 'x2', 'MAX->0'];
+                const bnd = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], visiblePlayers: [], resultData: [], trueTotal: 0 });
+                let bndPeer = null; const bndConnections = {}; let bndHostConn = null;
+
+                const bndCreateRoom = () => { bnd.myName = globalName.value; const id = generatePrefixedId('B'); bndPeer = new Peer(id); bndPeer.on('open', (id) => { bnd.peerId = id; bnd.roomId = id; bnd.isHost = true; bnd.screen = 'lobby'; bnd.players.push({ id: id, name: bnd.myName, isHost: true }); }); bndPeer.on('connection', (conn) => { bndConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { bnd.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['blind'](); } }); conn.on('close', () => { bnd.players = bnd.players.filter(p => p.id !== conn.peer); delete bndConnections[conn.peer]; broadcastMap['blind'](); }); }); };
+                const bndJoinRoom = () => { bndPeer = new Peer(); bndPeer.on('open', (id) => { bnd.peerId = id; bndHostConn = bndPeer.connect(bnd.inputRoomId); bndHostConn.on('open', () => { bnd.roomId = bnd.inputRoomId; bndHostConn.send({ type: 'join', name: globalName.value }); bnd.screen = 'lobby'; }); bndHostConn.on('data', (data) => { if (data.type === 'players') { bnd.players = data.players; } else if (data.type === 'start') { bnd.visiblePlayers = data.visiblePlayers; bnd.screen = 'game'; } else if (data.type === 'result') { bnd.resultData = data.resultData; bnd.trueTotal = data.trueTotal; bnd.screen = 'result'; } else if (data.type === 'back_to_lobby') { bnd.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
+                const bndStartGame = () => {
+                    let shuffledDeck = [...bndDeck].sort(() => 0.5 - Math.random());
+                    let assignments = bnd.players.map((p, idx) => ({ id: p.id, name: p.name, card: shuffledDeck[idx] }));
+                    bnd.players.forEach(p => {
+                        let visible = assignments.map(a => ({ id: a.id, name: a.name, card: a.id === p.id ? '?' : a.card }));
+                        if(p.id === bnd.peerId) { bnd.visiblePlayers = visible; }
+                        else if (bndConnections[p.id]) { bndConnections[p.id].send({ type: 'start', visiblePlayers: visible }); }
+                    });
+                    bnd.resultData = assignments;
+                    
+                    // 合計値計算ロジック
+                    let numCards = []; let maxVal = -999; let hasX2 = false; let hasMaxTo0 = false;
+                    assignments.forEach(a => { if(typeof a.card === 'number') { numCards.push(a.card); if(a.card > maxVal) maxVal = a.card; } else if(a.card === 'x2') hasX2 = true; else if(a.card === 'MAX->0') hasMaxTo0 = true; });
+                    if(hasMaxTo0 && maxVal !== -999) { numCards[numCards.indexOf(maxVal)] = 0; }
+                    let total = numCards.reduce((sum, val) => sum + val, 0);
+                    if(hasX2) total *= 2;
+                    bnd.trueTotal = total;
+                    bnd.screen = 'game';
+                };
+                const bndEndGame = () => { Object.values(bndConnections).forEach(c => { if(c.open) c.send({ type: 'result', resultData: bnd.resultData, trueTotal: bnd.trueTotal }); }); bnd.screen = 'result'; };
+                const bndBackToLobby = () => { bnd.screen = 'lobby'; Object.values(bndConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
 
                 return {
@@ -1024,11 +827,13 @@
                     globalName, globalInputRoomId, globalErrorMsg, smartJoinRoom, copyText,
                     
                     ww, wwCreateRoom, wwJoinRoom, wwStartGame, wwEndGame, wwBackToLobby,
-                    wwr, wwrRoleData, wwrPhaseText, wwrMyPlayerInfo, wwrCanAct, wwrIsWolfAlly, wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrNextPhase, wwrBackToLobby, wwrSubmitAction,
+                    wwr, wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrNextPhase, wwrBackToLobby, wwrSubmitAction,
                     rev, revScore, revCreateRoom, revJoinRoom, revStartGame, revPlaceDisc, revIsValidMove, revBackToLobby,
                     chs, chsGetPieceChar, chsCreateRoom, chsJoinRoom, chsStartGame, chsClickCell, chsBackToLobby,
                     gom, gomCreateRoom, gomJoinRoom, gomStartGame, gomPlaceStone, gomBackToLobby,
-                    drw, drwCreateRoom, drwJoinRoom, drwStartGame, drwSubmitTheme, drwSubmitGuess, drwSubmitDrawing, drwStartDraw, drwDraw, drwEndDraw, drwStartDrawTouch, drwDrawTouch, drwBackToLobby
+                    drw, drwCreateRoom, drwJoinRoom, drwStartGame, drwSubmitTheme, drwSubmitGuess, drwSubmitDrawing, drwStartDraw, drwDraw, drwEndDraw, drwStartDrawTouch, drwDrawTouch, drwBackToLobby,
+                    snc, sncCreateRoom, sncJoinRoom, sncStartGame, sncEndGame, sncBackToLobby,
+                    bnd, bndCreateRoom, bndJoinRoom, bndStartGame, bndEndGame, bndBackToLobby
                 };
             }
         }).mount('#app');
