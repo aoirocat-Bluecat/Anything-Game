@@ -40,7 +40,6 @@
         /* 五目並べ */
         .grid-15x15 { grid-template-columns: repeat(15, 1fr); background-color: #e6b981; border: 4px solid #8b5a2b; max-width: 500px; padding: 5px;}
         .gomoku-cell { border: 1px solid rgba(0,0,0,0.2); position: relative; }
-        /* 交点に石を置くように見せるための線 */
         .gomoku-cell::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.5); z-index: 1;}
         .gomoku-cell::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.5); z-index: 1;}
         .gomoku-stone { width: 85%; height: 85%; border-radius: 50%; z-index: 2; position: relative;}
@@ -92,7 +91,6 @@
                     <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col justify-between transition-colors">
                         <div>
                             <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">教えてもらったIDで参加</h3>
-                            <!-- 配信者モード時は入力欄をパスワード形式にする -->
                             <input v-model="globalInputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W- / J- / R- / C- / G- / D-">
                         </div>
                         <button @click="smartJoinRoom" :disabled="!globalName || !globalInputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
@@ -114,7 +112,6 @@
             </div>
 
             <div class="p-4 sm:p-6">
-                <!-- コンポーネント呼び出し的なものをv-ifで切り替え -->
                 
                 <!-- ワードウルフ -->
                 <div v-if="currentTab === 'wordwolf'">
@@ -124,16 +121,25 @@
                     </div>
                     <div v-if="ww.screen === 'lobby'" class="space-y-6">
                         <div class="text-center">
-                            <!-- 配信者モードでIDを隠す -->
                             <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                    {{ displayRoomId(ww.roomId) }}
-                                </code>
+                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(ww.roomId) }}</code>
                                 <button @click="copyText(ww.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                             </div>
                             <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
                         </div>
-                        <div><h3 class="font-bold mb-2 dark:text-white">参加者 ({{ ww.players.length }}人)</h3><ul class="dark:text-white"><li v-for="p in ww.players">{{ p.name }} <span v-if="p.isHost">(ホスト)</span></li></ul></div>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ ww.players.length }}人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
+                                <li v-for="p in ww.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === ww.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="ww.isHost && !p.isHost" @click="kickPlayer('wordwolf', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                         <div v-if="ww.isHost" class="border-t-2 pt-4">
                             <label class="dark:text-white">ウルフの人数</label><input v-model.number="ww.wolfCount" type="number" min="1" class="border p-1 w-full dark:text-black">
                             <button @click="wwStartGame" :disabled="ww.players.length < 3" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl">ゲーム開始</button>
@@ -158,16 +164,25 @@
                     </div>
                     <div v-if="wwr.screen === 'lobby'" class="space-y-6">
                         <div class="text-center">
-                            <!-- 配信者モードでIDを隠す -->
                             <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                    {{ displayRoomId(wwr.roomId) }}
-                                </code>
+                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(wwr.roomId) }}</code>
                                 <button @click="copyText(wwr.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                             </div>
                             <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
                         </div>
-                        <div><h3 class="font-bold mb-2 dark:text-white">参加者 ({{ wwr.players.length }}人)</h3><div class="dark:text-white"><span v-for="p in wwr.players" class="mr-2">{{ p.name }}<span v-if="p.isHost">(H)</span></span></div></div>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ wwr.players.length }}人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
+                                <li v-for="p in wwr.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === wwr.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="wwr.isHost && !p.isHost" @click="kickPlayer('werewolf', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                         <div v-if="wwr.isHost" class="border-t-2 pt-4">
                             <button @click="wwrStartGame" :disabled="wwr.players.length < 3" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl">ゲーム開始</button>
                         </div>
@@ -188,17 +203,26 @@
                         <button @click="revCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="rev.screen === 'lobby'" class="text-center space-y-4">
-                        <!-- 配信者モードでIDを隠す -->
                         <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                {{ displayRoomId(rev.roomId) }}
-                            </code>
+                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(rev.roomId) }}</code>
                             <button @click="copyText(rev.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                         </div>
                         <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
 
-                        <div class="dark:text-white">参加者: {{ rev.players.length }} / 2</div>
-                        <button v-if="rev.isHost && rev.players.length === 2" @click="revStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl">対戦開始！</button>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ rev.players.length }} / 2人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
+                                <li v-for="p in rev.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === rev.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="rev.isHost && !p.isHost" @click="kickPlayer('reversi', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <button v-if="rev.isHost && rev.players.length === 2" @click="revStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
                     </div>
                     <div v-if="rev.screen === 'game'" class="space-y-4 text-center">
                         <div class="dark:text-white text-lg font-bold">{{ rev.turn === rev.myColor ? 'あなたの番です' : '相手の番です' }}</div>
@@ -220,17 +244,26 @@
                         <button @click="chsCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="chs.screen === 'lobby'" class="text-center space-y-4">
-                        <!-- 配信者モードでIDを隠す -->
                         <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                {{ displayRoomId(chs.roomId) }}
-                            </code>
+                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(chs.roomId) }}</code>
                             <button @click="copyText(chs.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                         </div>
                         <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
 
-                        <div class="dark:text-white">参加者: {{ chs.players.length }} / 2</div>
-                        <button v-if="chs.isHost && chs.players.length === 2" @click="chsStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl">対戦開始！</button>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ chs.players.length }} / 2人</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
+                                <li v-for="p in chs.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === chs.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="chs.isHost && !p.isHost" @click="kickPlayer('chess', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <button v-if="chs.isHost && chs.players.length === 2" @click="chsStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
                     </div>
                     <div v-if="chs.screen === 'game'" class="space-y-4 text-center">
                         <div class="dark:text-white text-lg font-bold">{{ chs.turn === chs.myColor ? 'あなたの番です' : '相手の番です' }}</div>
@@ -253,25 +286,31 @@
                         <button @click="gomCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg mt-2">部屋を作成 (ホスト)</button>
                     </div>
                     <div v-if="gom.screen === 'lobby'" class="text-center space-y-4">
-                        <!-- 配信者モードでIDを隠す -->
                         <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                {{ displayRoomId(gom.roomId) }}
-                            </code>
+                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(gom.roomId) }}</code>
                             <button @click="copyText(gom.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                         </div>
                         <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
 
-                        <div class="dark:text-white">参加者: {{ gom.players.length }} / 2</div>
-                        <button v-if="gom.isHost && gom.players.length === 2" @click="gomStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl">対戦開始！</button>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ gom.players.length }} / 2人</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
+                                <li v-for="p in gom.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === gom.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="gom.isHost && !p.isHost" @click="kickPlayer('gomoku', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <button v-if="gom.isHost && gom.players.length === 2" @click="gomStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
                     </div>
                     <div v-if="gom.screen === 'game'" class="space-y-4 text-center">
-                        <div class="dark:text-white text-lg font-bold mb-2 flex justify-between px-4">
-                            <span :class="{'text-rose-500': gom.turn === 'black'}">⚫ {{ gom.playerBlackName }}</span>
+                        <div class="dark:text-white text-lg font-bold mb-2">
                             <span>{{ gom.turn === gom.myColor ? 'あなたの番です' : '相手の番です' }}</span>
-                            <span :class="{'text-rose-500': gom.turn === 'white'}">⚪ {{ gom.playerWhiteName }}</span>
                         </div>
-                        <!-- 15x15盤面 -->
                         <div class="board-grid grid-15x15 mx-auto">
                             <div v-for="(cell, index) in gom.board" :key="index" @click="gomPlaceStone(index)" class="board-cell gomoku-cell">
                                 <div v-if="cell" class="gomoku-stone" :class="cell === 'black' ? 'disc-black' : 'disc-white'"></div>
@@ -294,38 +333,41 @@
                     </div>
                     
                     <div v-if="drw.screen === 'lobby'" class="text-center space-y-4">
-                        <!-- 配信者モードでIDを隠す -->
                         <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">
-                                {{ displayRoomId(drw.roomId) }}
-                            </code>
+                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(drw.roomId) }}</code>
                             <button @click="copyText(drw.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
                         </div>
                         <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
                         
-                        <div class="dark:text-white font-bold mt-4">👥 参加者 ({{ drw.players.length }}人)</div>
-                        <ul class="dark:text-white border rounded-lg p-2"><li v-for="p in drw.players" class="py-1">{{ p.name }}</li></ul>
+                        <div>
+                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ drw.players.length }}人)</h3>
+                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left">
+                                <li v-for="p in drw.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
+                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
+                                    <div class="space-x-2 flex items-center">
+                                        <span v-if="p.id === drw.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
+                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                        <button v-if="drw.isHost && !p.isHost" @click="kickPlayer('draw', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                         <button v-if="drw.isHost" @click="drwStartGame" :disabled="drw.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4 disabled:opacity-50">ゲーム開始</button>
                     </div>
 
-                    <!-- お題入力フェーズ -->
                     <div v-if="drw.screen === 'write_theme'" class="text-center space-y-6">
                         <h2 class="text-xl font-bold dark:text-white">最初のお題を書いてください</h2>
                         <input v-model="drw.myInputTheme" type="text" class="w-full p-4 text-xl border-2 rounded-xl text-center" placeholder="（例）りんごを食べるゴリラ">
                         <button @click="drwSubmitTheme" :disabled="!drw.myInputTheme || drw.hasSubmitted" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50">決定</button>
                         <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
                     </div>
-
-                    <!-- お絵かきフェーズ -->
+                    
                     <div v-if="drw.screen === 'draw_turn'" class="space-y-4 flex flex-col items-center">
                         <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 w-full rounded shadow-sm text-center">
                             <p class="text-sm text-yellow-700 font-bold">このお題の絵を描いてください！</p>
                             <p class="text-2xl font-black text-yellow-900 mt-1">{{ drw.currentTaskText }}</p>
                         </div>
-                        
                         <canvas id="draw-canvas" @mousedown="drwStartDraw" @mousemove="drwDraw" @mouseup="drwEndDraw" @mouseout="drwEndDraw" @touchstart="drwStartDrawTouch" @touchmove="drwDrawTouch" @touchend="drwEndDraw"></canvas>
-                        
-                        <!-- ツールバー -->
                         <div class="flex justify-between w-full max-w-[500px] bg-white p-2 rounded-lg shadow items-center">
                             <div class="flex gap-2">
                                 <button v-for="c in ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#eab308']" :key="c" @click="drw.penColor = c" class="color-btn" :class="{'color-selected': drw.penColor === c}" :style="{backgroundColor: c}"></button>
@@ -336,39 +378,29 @@
                                 <input type="range" v-model="drw.penWidth" min="1" max="20" class="w-20">
                             </div>
                         </div>
-                        
                         <button @click="drwSubmitDrawing" :disabled="drw.hasSubmitted" class="w-full max-w-[500px] bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50">描き終わった！</button>
                         <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
                     </div>
 
-                    <!-- 絵を見て文字を書くフェーズ -->
                     <div v-if="drw.screen === 'guess_turn'" class="text-center space-y-4 flex flex-col items-center">
                         <div class="bg-blue-100 border-l-4 border-blue-500 p-4 w-full rounded shadow-sm text-center">
                             <p class="text-sm text-blue-700 font-bold">この絵は何を描いたものでしょうか？</p>
                         </div>
                         <img :src="drw.currentTaskImage" class="border-2 border-gray-300 rounded-lg w-full max-w-[500px] bg-white shadow-sm" alt="前の人の絵">
-                        
                         <input v-model="drw.myInputGuess" type="text" class="w-full max-w-[500px] p-4 text-xl border-2 rounded-xl text-center mt-4" placeholder="何を描いた絵？">
                         <button @click="drwSubmitGuess" :disabled="!drw.myInputGuess || drw.hasSubmitted" class="w-full max-w-[500px] bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50 mt-2">決定</button>
                         <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
                     </div>
 
-                    <!-- 結果発表 (アルバム鑑賞) フェーズ -->
                     <div v-if="drw.screen === 'result'" class="space-y-6 flex flex-col items-center w-full">
                         <h2 class="text-3xl font-black text-rose-500">結果発表アルバム 📖</h2>
-                        
-                        <!-- ページ切り替え式で1つのストーリー（アルバム）を見せる -->
                         <div v-if="drw.albums.length > 0" class="w-full max-w-[500px] bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg border-2 border-gray-200 dark:border-slate-600">
                             <h3 class="text-center font-bold text-gray-500 dark:text-gray-400 mb-4">アルバム {{ drw.currentAlbumIndex + 1 }} / {{ drw.albums.length }}</h3>
-                            
                             <div class="space-y-6">
                                 <div v-for="(step, idx) in drw.albums[drw.currentAlbumIndex].history" :key="idx" class="border-b pb-4 last:border-0 relative pl-8">
-                                    <!-- タイムラインの線 -->
                                     <div class="absolute left-3 top-2 bottom-0 w-1 bg-indigo-200"></div>
                                     <div class="absolute left-[8px] top-2 w-3 h-3 rounded-full bg-indigo-500 shadow"></div>
-                                    
                                     <div class="text-sm font-bold text-indigo-600 dark:text-indigo-300 mb-1">{{ step.playerName }} さんの番</div>
-                                    
                                     <div v-if="step.type === 'theme' || step.type === 'guess'" class="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg font-black text-xl text-center shadow-inner dark:text-white">
                                         {{ step.data }}
                                     </div>
@@ -377,13 +409,11 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <div class="flex justify-between mt-6">
                                 <button @click="drw.currentAlbumIndex--" :disabled="drw.currentAlbumIndex === 0" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 font-bold rounded disabled:opacity-30 dark:text-white">◀ 前のアルバム</button>
                                 <button @click="drw.currentAlbumIndex++" :disabled="drw.currentAlbumIndex === drw.albums.length - 1" class="px-4 py-2 bg-indigo-500 text-white font-bold rounded disabled:opacity-30">次のアルバム ▶</button>
                             </div>
                         </div>
-
                         <button v-if="drw.isHost" @click="drwBackToLobby" class="w-full max-w-[500px] bg-slate-800 text-white font-bold py-4 rounded-xl shadow-md mt-4">ロビーに戻る</button>
                     </div>
                 </div>
@@ -405,12 +435,74 @@
                 const globalInputRoomId = ref('');
                 const globalErrorMsg = ref('');
 
-                // 配信者モードでIDを伏字にするためのヘルパー関数
+                // ==========================================
+                // 接続管理・状態参照用オブジェクト
+                // ==========================================
+                // 各ゲームの接続リストと状態にアクセスするためのマッピング
+                const connectionsMap = {
+                    'wordwolf': () => wwConnections,
+                    'werewolf': () => wwrConnections,
+                    'reversi': () => revConnections,
+                    'chess': () => chsConnections,
+                    'gomoku': () => gomConnections,
+                    'draw': () => drwConnections
+                };
+                const stateMap = {
+                    'wordwolf': () => ww,
+                    'werewolf': () => wwr,
+                    'reversi': () => rev,
+                    'chess': () => chs,
+                    'gomoku': () => gom,
+                    'draw': () => drw
+                };
+                const broadcastMap = {
+                    'wordwolf': () => wwBroadcast({ type: 'players', players: ww.players }),
+                    'werewolf': () => { const state = { type: 'state', players: wwr.players, dayCount: wwr.dayCount, phase: wwr.phase, announceLog: wwr.announceLog, actedPlayers: wwrActedPlayers }; Object.values(wwrConnections).forEach(c=>{if(c.open)c.send(state);}); },
+                    'reversi': () => { Object.values(revConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:rev.players});}); },
+                    'chess': () => { Object.values(chsConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:chs.players});}); },
+                    'gomoku': () => { Object.values(gomConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:gom.players});}); },
+                    'draw': () => { Object.values(drwConnections).forEach(c=>{if(c.open)c.send({type:'players', players:drw.players});}); },
+                };
+
+                // ホストによるキック処理
+                const kickPlayer = (gameType, targetId) => {
+                    if(!confirm('このプレイヤーをキックしますか？')) return;
+                    
+                    const conns = connectionsMap[gameType]();
+                    const state = stateMap[gameType]();
+                    
+                    if (conns[targetId]) {
+                        // ゲスト側にキックされたことを通知
+                        if(conns[targetId].open) {
+                            conns[targetId].send({ type: 'kicked' });
+                            // 少し待ってからコネクションを閉じる
+                            setTimeout(() => {
+                                conns[targetId].close();
+                                delete conns[targetId];
+                            }, 500);
+                        }
+                    }
+                    
+                    // 参加者リストから削除し、残りのメンバーに状態を同期
+                    state.players = state.players.filter(p => p.id !== targetId);
+                    broadcastMap[gameType]();
+                };
+
+                // ゲストがキックされたときの共通処理
+                const handleKicked = () => {
+                    globalErrorMsg.value = 'ホストによってルームからキックされました。';
+                    const activeState = stateMap[currentTab.value]();
+                    if(activeState) {
+                        activeState.screen = 'home';
+                        activeState.roomId = '';
+                        activeState.players = [];
+                    }
+                };
+
+                // 配信者モードでIDを伏字にする
                 const displayRoomId = (id) => {
                     if (!id) return '';
                     if (!isStreamerMode.value) return id;
-                    
-                    // 例: "W-ABCDEF" -> "W-******"
                     const parts = id.split('-');
                     if(parts.length > 1) {
                         return parts[0] + '-' + '*'.repeat(parts[1].length);
@@ -418,7 +510,6 @@
                     return '*'.repeat(id.length);
                 };
 
-                // 画面UI表示用のフラグ (どれかのゲームが進行中ならタブを隠す)
                 const isGameStarted = computed(() => {
                     return (currentTab.value === 'wordwolf' && ww.screen !== 'home' && ww.screen !== 'lobby') ||
                            (currentTab.value === 'werewolf' && wwr.screen !== 'home' && wwr.screen !== 'lobby') ||
@@ -429,12 +520,7 @@
                 });
 
                 watch(globalName, (newVal) => localStorage.setItem('my_party_game_name', newVal));
-                
-                // コピー機能 (伏字になっていても実際のIDがコピーされる)
-                const copyText = (text) => { 
-                    navigator.clipboard.writeText(text); 
-                    alert('ルームIDをコピーしました！'); 
-                };
+                const copyText = (text) => { navigator.clipboard.writeText(text); alert('ルームIDをコピーしました！'); };
 
                 const toggleNightMode = () => {
                     isNightMode.value = !isNightMode.value;
@@ -506,89 +592,55 @@
                             else if (data.type === 'start') { ww.myTheme = data.theme; ww.screen = 'game'; }
                             else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; }
                             else if (data.type === 'back_to_lobby') ww.screen = 'lobby';
+                            else if (data.type === 'kicked') handleKicked();
                         });
-                        wwHostConn.on('close', () => { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; });
+                        wwHostConn.on('close', () => { if(ww.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; }});
                     });
                     wwPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
                 };
 
                 // ==========================================
-                //  2. 人狼ゲーム (ロジック実装)
+                //  2. 人狼ゲーム
                 // ==========================================
                 const wwrRoleData = { villager: { name: '村人', icon: '🧑‍🌾' }, wolf: { name: '人狼', icon: '🐺' }, seer: { name: '占い師', icon: '🔮' }, knight: { name: '騎士', icon: '🛡️' } };
+                const wwr = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], settings: { wolf: 1, seer: 1, knight: 1 }, myRole: '', wolfAllies: [], dayCount: 1, phase: 'setup', announceLog: '', selectedTarget: null, seerResult: null, winner: '', finalResults: [] });
+                let wwrPeer = null; const wwrConnections = {}; let wwrHostConn = null; let wwrSecretRoles = {}; const wwrNightActions = { wolf: null, seer: null, knight: null }; const wwrVotes = {}; const wwrActedPlayers = [];
 
-                const wwr = reactive({
-                    screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '',
-                    players: [], settings: { wolf: 1, seer: 1, knight: 1 }, myRole: '', wolfAllies: [], dayCount: 1,
-                    phase: 'setup', announceLog: '', selectedTarget: null, seerResult: null, winner: '', finalResults: []
-                });
-
-                let wwrPeer = null; const wwrConnections = {}; let wwrHostConn = null; let wwrSecretRoles = {};
-                const wwrNightActions = { wolf: null, seer: null, knight: null }; const wwrVotes = {}; const wwrActedPlayers = [];
-
-                const wwrPhaseText = computed(() => {
-                    if(wwr.phase === 'night') return '夜（行動フェーズ）'; if(wwr.phase === 'day') return '昼（議論フェーズ）'; if(wwr.phase === 'vote') return '夕方（投票フェーズ）'; return '';
-                });
+                const wwrPhaseText = computed(() => { if(wwr.phase === 'night') return '夜（行動フェーズ）'; if(wwr.phase === 'day') return '昼（議論フェーズ）'; if(wwr.phase === 'vote') return '夕方（投票フェーズ）'; return ''; });
                 const wwrMyPlayerInfo = computed(() => wwr.players.find(p => p.id === wwr.peerId));
-                const wwrCanAct = computed(() => {
-                    if (!wwrMyPlayerInfo.value?.isAlive) return false;
-                    if (wwr.phase === 'night' && ['wolf', 'seer', 'knight'].includes(wwr.myRole) && !wwrActedPlayers.includes(wwr.peerId)) return true;
-                    if (wwr.phase === 'vote' && !wwrActedPlayers.includes(wwr.peerId)) return true;
-                    return false;
-                });
+                const wwrCanAct = computed(() => { if (!wwrMyPlayerInfo.value?.isAlive) return false; if (wwr.phase === 'night' && ['wolf', 'seer', 'knight'].includes(wwr.myRole) && !wwrActedPlayers.includes(wwr.peerId)) return true; if (wwr.phase === 'vote' && !wwrActedPlayers.includes(wwr.peerId)) return true; return false; });
                 const wwrIsWolfAlly = (id) => wwrSecretRoles[id] === 'wolf' || wwr.wolfAllies.some(a => wwr.players.find(p=>p.name===a)?.id === id);
 
                 const wwrCreateRoom = () => {
-                    wwr.myName = globalName.value;
-                    const id = generatePrefixedId('J');
-                    wwrPeer = new Peer(id);
+                    wwr.myName = globalName.value; const id = generatePrefixedId('J'); wwrPeer = new Peer(id);
                     wwrPeer.on('open', (id) => { wwr.peerId = id; wwr.roomId = id; wwr.isHost = true; wwr.screen = 'lobby'; wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true }); });
                     wwrPeer.on('connection', (conn) => {
                         wwrConnections[conn.peer] = conn;
                         conn.on('data', (data) => {
-                            if (data.type === 'join') { wwr.players.push({ id: conn.peer, name: data.name, isHost: false, isAlive: true }); wwrBroadcastState(); } 
+                            if (data.type === 'join') { wwr.players.push({ id: conn.peer, name: data.name, isHost: false, isAlive: true }); broadcastMap['werewolf'](); } 
                             else if (data.type === 'action') {
                                 if (wwr.phase === 'night') {
                                     const role = wwrSecretRoles[conn.peer]; if(role) wwrNightActions[role] = data.target;
                                     if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer);
-                                    if (role === 'seer') {
-                                        const targetIsWolf = wwrSecretRoles[data.target] === 'wolf';
-                                        const targetName = wwr.players.find(p => p.id === data.target)?.name;
-                                        if(wwrConnections[conn.peer] && wwrConnections[conn.peer].open) wwrConnections[conn.peer].send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf });
-                                    }
+                                    if (role === 'seer') { const targetIsWolf = wwrSecretRoles[data.target] === 'wolf'; const targetName = wwr.players.find(p => p.id === data.target)?.name; if(wwrConnections[conn.peer] && wwrConnections[conn.peer].open) wwrConnections[conn.peer].send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf }); }
                                 } else if (wwr.phase === 'vote') { wwrVotes[conn.peer] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); }
                             }
                         });
-                        conn.on('close', () => { wwr.players = wwr.players.filter(p => p.id !== conn.peer); delete wwrConnections[conn.peer]; wwrBroadcastState(); });
+                        conn.on('close', () => { wwr.players = wwr.players.filter(p => p.id !== conn.peer); delete wwrConnections[conn.peer]; broadcastMap['werewolf'](); });
                     });
                 };
-
-                const wwrBroadcastState = () => {
-                    const state = { type: 'state', players: wwr.players, dayCount: wwr.dayCount, phase: wwr.phase, announceLog: wwr.announceLog, actedPlayers: wwrActedPlayers };
-                    if(wwr.phase === 'day' || wwr.phase === 'vote') wwr.announceLog = state.announceLog;
-                    Object.values(wwrConnections).forEach(c => { if(c.open) c.send(state); });
-                };
-
                 const wwrStartGame = () => {
-                    let deck = [];
-                    for(let i=0; i<wwr.settings.wolf; i++) deck.push('wolf'); for(let i=0; i<wwr.settings.seer; i++) deck.push('seer'); for(let i=0; i<wwr.settings.knight; i++) deck.push('knight');
+                    let deck = []; for(let i=0; i<wwr.settings.wolf; i++) deck.push('wolf'); for(let i=0; i<wwr.settings.seer; i++) deck.push('seer'); for(let i=0; i<wwr.settings.knight; i++) deck.push('knight');
                     while(deck.length < wwr.players.length) deck.push('villager'); deck = deck.sort(() => 0.5 - Math.random());
-                    
                     wwrSecretRoles = {}; wwr.players.forEach((p, idx) => { p.isAlive = true; wwrSecretRoles[p.id] = deck[idx]; });
                     wwr.players.forEach(p => {
-                        const r = wwrSecretRoles[p.id]; let allies = [];
-                        if (r === 'wolf') allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name);
+                        const r = wwrSecretRoles[p.id]; let allies = []; if (r === 'wolf') allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name);
                         if (p.id === wwr.peerId) { wwr.myRole = r; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...allies); } 
                         else { if(wwrConnections[p.id] && wwrConnections[p.id].open) wwrConnections[p.id].send({ type: 'secret', role: r, wolfAllies: allies }); }
                     });
-                    
-                    wwr.dayCount = 1; wwr.phase = 'night'; 
-                    wwr.announceLog = `夜になりました。\n役職者は行動を選択してください。`; 
-                    wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null;
-                    Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
-                    wwr.screen = 'game'; wwrBroadcastState();
+                    wwr.dayCount = 1; wwr.phase = 'night'; wwr.announceLog = `夜になりました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null;
+                    Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.screen = 'game'; broadcastMap['werewolf']();
                 };
-
                 const wwrJoinRoom = () => {
                     wwrPeer = new Peer();
                     wwrPeer.on('open', (id) => {
@@ -597,15 +649,15 @@
                         wwrHostConn.on('data', (data) => {
                             if (data.type === 'state') {
                                 wwr.players.splice(0, wwr.players.length, ...data.players); wwr.dayCount = data.dayCount; wwr.phase = data.phase; wwr.announceLog = data.announceLog;
-                                wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers);
-                                if(!wwrActedPlayers.includes(wwr.peerId)) { wwr.selectedTarget = null; if(wwr.phase !== 'night') wwr.seerResult = null; }
+                                wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers); if(!wwrActedPlayers.includes(wwr.peerId)) { wwr.selectedTarget = null; if(wwr.phase !== 'night') wwr.seerResult = null; }
                                 if(wwr.screen !== 'result') wwr.screen = 'game';
                             } else if (data.type === 'secret') { wwr.myRole = data.role; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...(data.wolfAllies || [])); }
                             else if (data.type === 'seer_result') { wwr.seerResult = { name: data.name, isWolf: data.isWolf }; } 
                             else if (data.type === 'result') { wwr.winner = data.winner; wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results); wwr.screen = 'result'; } 
                             else if (data.type === 'back_to_lobby') { wwr.screen = 'lobby'; }
+                            else if (data.type === 'kicked') handleKicked();
                         });
-                        wwrHostConn.on('close', () => { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; });
+                        wwrHostConn.on('close', () => { if(wwr.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; }});
                     });
                     wwrPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。入力IDを確認してください。');
                 };
@@ -616,41 +668,29 @@
                         if (victimId && victimId !== wwrNightActions.knight) { diedId = victimId; const p = wwr.players.find(x => x.id === diedId); if(p) p.isAlive = false; }
                         wwr.phase = 'day'; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
                         wwr.announceLog = diedId ? `朝になりました。\n${wwr.players.find(x => x.id === diedId).name} が殺されていました...。\n生存者で話し合いをしてください。` : `朝になりました。\n昨晩は誰も死にませんでした！\n生存者で話し合いをしてください。`;
-                        wwrBroadcastState(); wwrCheckWinCondition();
+                        broadcastMap['werewolf'](); wwrCheckWinCondition();
                     } else if (wwr.phase === 'day') {
                         wwr.phase = 'vote'; wwr.announceLog = `話し合いが終了しました。\n処刑する人を1人選んで投票してください。`; 
                         wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
-                        wwrBroadcastState();
+                        broadcastMap['werewolf']();
                     } else if (wwr.phase === 'vote') {
                         const tally = {}; Object.values(wwrVotes).forEach(targetId => { tally[targetId] = (tally[targetId] || 0) + 1; });
-                        let maxVotes = 0, executedId = null;
-                        for (const [id, count] of Object.entries(tally)) { if (count > maxVotes) { maxVotes = count; executedId = id; } }
-                        if (executedId) { const p = wwr.players.find(x => x.id === executedId); if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; } } 
-                        else { wwr.announceLog = `票がまとまらなかったため、本日の処刑者はいませんでした。`; }
-                        wwrBroadcastState();
+                        let maxVotes = 0, executedId = null; for (const [id, count] of Object.entries(tally)) { if (count > maxVotes) { maxVotes = count; executedId = id; } }
+                        if (executedId) { const p = wwr.players.find(x => x.id === executedId); if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; } } else { wwr.announceLog = `票がまとまらなかったため、本日の処刑者はいませんでした。`; }
+                        broadcastMap['werewolf']();
                         if(!wwrCheckWinCondition()) { 
-                            setTimeout(() => { 
-                                wwr.dayCount++; wwr.phase = 'night'; 
-                                wwr.announceLog = `夜が来ました。\n役職者は行動を選択してください。`; 
-                                wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null;
-                                wwrBroadcastState(); 
-                            }, 4000); 
+                            setTimeout(() => { wwr.dayCount++; wwr.phase = 'night'; wwr.announceLog = `夜が来ました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); }, 4000); 
                         }
                     }
                 };
-
                 const wwrCheckWinCondition = () => {
-                    const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length;
-                    const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length;
-                    if (aliveWolves === 0) { wwrEndGame('human'); return true; } else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; }
-                    return false;
+                    const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length; const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length;
+                    if (aliveWolves === 0) { wwrEndGame('human'); return true; } else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; } return false;
                 };
-
                 const wwrEndGame = (winTeam) => {
                     wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive })));
                     wwr.screen = 'result'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); });
                 };
-
                 const wwrBackToLobby = () => { wwr.screen = 'lobby'; wwr.phase = 'setup'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
                 const wwrSubmitAction = () => {
                     if (!wwr.selectedTarget) return;
@@ -658,15 +698,12 @@
                         if (wwr.phase === 'night') { wwrNightActions[wwr.myRole] = wwr.selectedTarget; if (wwr.myRole === 'seer') { wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' }; } } 
                         else if (wwr.phase === 'vote') { wwrVotes[wwr.peerId] = wwr.selectedTarget; }
                         if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId);
-                    } else { 
-                        wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); 
-                        if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); 
-                    }
+                    } else { wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); }
                     wwr.selectedTarget = null;
                 };
 
                 // ==========================================
-                //  3. リバーシ (ロジック実装)
+                //  3. リバーシ
                 // ==========================================
                 const rev = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(64).fill(null), turn: 'black', myColor: '', passMessage: '', winner: '', playerBlackName: '', playerWhiteName: '' });
                 let revPeer = null; const revConnections = {}; let revHostConn = null;
@@ -678,10 +715,10 @@
                     revPeer.on('connection', (conn) => {
                         revConnections[conn.peer] = conn;
                         conn.on('data', (data) => {
-                            if (data.type === 'join' && rev.players.length < 2) { rev.players.push({ id: conn.peer, name: data.name }); conn.send({ type: 'joined', players: rev.players }); } 
+                            if (data.type === 'join' && rev.players.length < 2) { rev.players.push({ id: conn.peer, name: data.name }); broadcastMap['reversi'](); } 
                             else if (data.type === 'move') { revExecuteMove(data.index, data.color); }
                         });
-                        conn.on('close', () => { rev.players = rev.players.filter(p => p.id !== conn.peer); delete revConnections[conn.peer]; });
+                        conn.on('close', () => { rev.players = rev.players.filter(p => p.id !== conn.peer); delete revConnections[conn.peer]; broadcastMap['reversi'](); });
                     });
                 };
                 const revJoinRoom = () => {
@@ -694,6 +731,7 @@
                             else if (data.type === 'start') { rev.myColor = data.color; rev.playerBlackName = data.blackName; rev.playerWhiteName = data.whiteName; rev.board = data.board; rev.turn = 'black'; rev.screen = 'game'; rev.passMessage = ''; }
                             else if (data.type === 'update') { rev.board = data.board; rev.turn = data.turn; rev.passMessage = data.passMsg || ''; if(data.isEnd) { rev.winner = data.winner; rev.screen = 'result'; } }
                             else if (data.type === 'back_to_lobby') { rev.screen = 'lobby'; }
+                            else if (data.type === 'kicked') handleKicked();
                         });
                     });
                 };
@@ -735,7 +773,7 @@
                 const revBackToLobby = () => { rev.screen = 'lobby'; Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
                 // ==========================================
-                //  4. チェス (簡易ロジック)
+                //  4. チェス
                 // ==========================================
                 const chs = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(64).fill(null), turn: 'w', myColor: '', playerWhiteName: '', playerBlackName: '', selectedIndex: null, validMoves: [], winner: '' });
                 let chsPeer = null; const chsConnections = {}; let chsHostConn = null;
@@ -747,10 +785,10 @@
                     chsPeer.on('connection', (conn) => {
                         chsConnections[conn.peer] = conn;
                         conn.on('data', (data) => {
-                            if (data.type === 'join' && chs.players.length < 2) { chs.players.push({ id: conn.peer, name: data.name }); conn.send({ type: 'joined', players: chs.players }); } 
+                            if (data.type === 'join' && chs.players.length < 2) { chs.players.push({ id: conn.peer, name: data.name }); broadcastMap['chess'](); } 
                             else if (data.type === 'move') { chsExecuteMove(data.from, data.to); }
                         });
-                        conn.on('close', () => { chs.players = chs.players.filter(p => p.id !== conn.peer); delete chsConnections[conn.peer]; });
+                        conn.on('close', () => { chs.players = chs.players.filter(p => p.id !== conn.peer); delete chsConnections[conn.peer]; broadcastMap['chess'](); });
                     });
                 };
                 const chsJoinRoom = () => {
@@ -763,6 +801,7 @@
                             else if (data.type === 'start') { chs.myColor = data.color; chs.playerWhiteName = data.whiteName; chs.playerBlackName = data.blackName; chs.board = data.board; chs.turn = 'w'; chs.screen = 'game'; }
                             else if (data.type === 'update') { chs.board = data.board; chs.turn = data.turn; if(data.isEnd) { chs.winner = data.winner; chs.screen = 'result'; } }
                             else if (data.type === 'back_to_lobby') { chs.screen = 'lobby'; }
+                            else if (data.type === 'kicked') handleKicked();
                         });
                     });
                 };
@@ -807,7 +846,7 @@
                 const chsBackToLobby = () => { chs.screen = 'lobby'; Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
                 // ==========================================
-                //  5. 五目並べ (Gomoku) ロジック
+                //  5. 五目並べ
                 // ==========================================
                 const gom = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(225).fill(null), turn: 'black', myColor: '', winner: '', playerBlackName: '', playerWhiteName: '' });
                 let gomPeer = null; const gomConnections = {}; let gomHostConn = null;
@@ -818,10 +857,10 @@
                     gomPeer.on('connection', (conn) => {
                         gomConnections[conn.peer] = conn;
                         conn.on('data', (data) => {
-                            if (data.type === 'join' && gom.players.length < 2) { gom.players.push({ id: conn.peer, name: data.name }); conn.send({ type: 'joined', players: gom.players }); } 
+                            if (data.type === 'join' && gom.players.length < 2) { gom.players.push({ id: conn.peer, name: data.name }); broadcastMap['gomoku'](); } 
                             else if (data.type === 'move') { gomExecuteMove(data.index, data.color); }
                         });
-                        conn.on('close', () => { gom.players = gom.players.filter(p => p.id !== conn.peer); delete gomConnections[conn.peer]; });
+                        conn.on('close', () => { gom.players = gom.players.filter(p => p.id !== conn.peer); delete gomConnections[conn.peer]; broadcastMap['gomoku'](); });
                     });
                 };
                 const gomJoinRoom = () => {
@@ -834,6 +873,7 @@
                             else if (data.type === 'start') { gom.myColor = data.color; gom.playerBlackName = data.blackName; gom.playerWhiteName = data.whiteName; gom.board = data.board; gom.turn = 'black'; gom.screen = 'game'; }
                             else if (data.type === 'update') { gom.board = data.board; gom.turn = data.turn; if(data.isEnd) { gom.winner = data.winner; gom.screen = 'result'; } }
                             else if (data.type === 'back_to_lobby') { gom.screen = 'lobby'; }
+                            else if (data.type === 'kicked') handleKicked();
                         });
                     });
                 };
@@ -868,8 +908,9 @@
                 };
                 const gomBackToLobby = () => { gom.screen = 'lobby'; Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
 
+
                 // ==========================================
-                //  6. お絵かき伝言ゲーム (Gartic Phone風) ロジック
+                //  6. お絵かき伝言ゲーム
                 // ==========================================
                 const drw = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], turn: 0, totalTurns: 0, myInputTheme: '', myInputGuess: '', hasSubmitted: false, currentTaskText: '', currentTaskImage: '', albums: [], currentAlbumIndex: 0, penColor: '#000000', penWidth: 5, isDrawing: false });
                 let drwPeer = null; const drwConnections = {}; let drwHostConn = null;
@@ -881,12 +922,12 @@
                     drwPeer.on('connection', (conn) => {
                         drwConnections[conn.peer] = conn;
                         conn.on('data', (data) => {
-                            if (data.type === 'join') { drw.players.push({ id: conn.peer, name: data.name }); drwBroadcast({ type: 'players', players: drw.players }); } 
+                            if (data.type === 'join') { drw.players.push({ id: conn.peer, name: data.name }); broadcastMap['draw'](); } 
                             else if (data.type === 'submit_theme') { drwHandleSubmission(conn.peer, 'theme', data.theme); }
                             else if (data.type === 'submit_draw') { drwHandleSubmission(conn.peer, 'draw', data.image); }
                             else if (data.type === 'submit_guess') { drwHandleSubmission(conn.peer, 'guess', data.guess); }
                         });
-                        conn.on('close', () => { drw.players = drw.players.filter(p => p.id !== conn.peer); delete drwConnections[conn.peer]; drwBroadcast({ type: 'players', players: drw.players }); });
+                        conn.on('close', () => { drw.players = drw.players.filter(p => p.id !== conn.peer); delete drwConnections[conn.peer]; broadcastMap['draw'](); });
                     });
                 };
                 const drwJoinRoom = () => {
@@ -904,16 +945,17 @@
                             }
                             else if (data.type === 'result') { drw.albums = data.albums; drw.currentAlbumIndex = 0; drw.screen = 'result'; }
                             else if (data.type === 'back_to_lobby') { drw.screen = 'lobby'; }
+                            else if (data.type === 'kicked') handleKicked();
                         });
                     });
                 };
-                const drwBroadcast = (data) => { Object.values(drwConnections).forEach(c => { if(c.open) c.send(data); }); };
+                
                 const drwStartGame = () => {
                     drwPlayerOrder = drw.players.map(p => p.id).sort(() => Math.random() - 0.5);
                     drw.totalTurns = drw.players.length; drw.turn = 1;
                     drwMasterData = drwPlayerOrder.map(() => ({ history: [] }));
                     drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = '';
-                    drwBroadcast({ type: 'start' });
+                    Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'start' }); });
                 };
 
                 let drwSubmissions = 0;
@@ -927,7 +969,7 @@
                         drwSubmissions = 0; drw.turn++;
                         if (drw.turn > drw.totalTurns) {
                             drw.albums = drwMasterData; drw.currentAlbumIndex = 0; drw.screen = 'result';
-                            drwBroadcast({ type: 'result', albums: drwMasterData });
+                            Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'result', albums: drwMasterData }); });
                         } else {
                             const isDrawTurn = drw.turn % 2 === 0;
                             drwPlayerOrder.forEach((pid, idx) => {
@@ -973,12 +1015,14 @@
                 };
                 const drwDrawTouch = (e) => { e.preventDefault(); drwDraw(e); };
                 const drwEndDraw = () => { drw.isDrawing = false; };
-                const drwBackToLobby = () => { drw.screen = 'lobby'; drwBroadcast({ type: 'back_to_lobby' }); };
+                const drwBackToLobby = () => { drw.screen = 'lobby'; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
+
 
                 return {
                     currentTab, switchTab, isNightMode, toggleNightMode, isGameStarted,
-                    isStreamerMode, displayRoomId, // ← 配信者モード
+                    isStreamerMode, displayRoomId, kickPlayer, // ← 追加機能
                     globalName, globalInputRoomId, globalErrorMsg, smartJoinRoom, copyText,
+                    
                     ww, wwCreateRoom, wwJoinRoom, wwStartGame, wwEndGame, wwBackToLobby,
                     wwr, wwrRoleData, wwrPhaseText, wwrMyPlayerInfo, wwrCanAct, wwrIsWolfAlly, wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrNextPhase, wwrBackToLobby, wwrSubmitAction,
                     rev, revScore, revCreateRoom, revJoinRoom, revStartGame, revPlaceDisc, revIsValidMove, revBackToLobby,
@@ -990,4 +1034,4 @@
         }).mount('#app');
     </script>
 </body>
-</html>}私は大規模言語モデルとしてまだ学習中です。そちらについては、理解して対応できる機能がないため、すみませんがお手伝いできません。
+</html>
