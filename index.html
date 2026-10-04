@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>なんでもゲーム</title>
+    <title>ボム・ワード (BOMB WORD)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,532 +15,218 @@
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     
     <style>
-        /* ボードゲーム用のスタイル */
-        .board-grid { display: grid; width: 100%; max-width: 400px; margin: 0 auto; border: 2px solid #333; }
-        .board-cell { aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; font-size: clamp(1rem, 5vw, 2rem); cursor: pointer; user-select: none; }
-        
-        /* リバーシ */
-        .grid-8x8 { grid-template-columns: repeat(8, 1fr); }
-        .reversi-cell { background-color: #2e7d32; border: 1px solid #1b5e20; }
-        .reversi-disc { width: 80%; height: 80%; border-radius: 50%; transition: all 0.3s; }
-        .disc-black { background-color: #111; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .disc-white { background-color: #eee; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .valid-move::after { content: ''; width: 30%; height: 30%; background-color: rgba(0,0,0,0.2); border-radius: 50%; }
-        
-        /* チェス */
-        .chess-light { background-color: #f0d9b5; }
-        .chess-dark { background-color: #b58863; }
-        .chess-piece { text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        .chess-selected { background-color: rgba(255, 255, 51, 0.6); }
-        .chess-valid { position: relative; }
-        .chess-valid::after { content: ''; position: absolute; width: 25%; height: 25%; background-color: rgba(0,0,0,0.15); border-radius: 50%; }
-
-        /* 五目並べ */
-        .grid-15x15 { grid-template-columns: repeat(15, 1fr); background-color: #e6b981; border: 4px solid #8b5a2b; max-width: 500px; padding: 5px;}
-        .gomoku-cell { border: 1px solid rgba(0,0,0,0.2); position: relative; }
-        .gomoku-cell::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.5); z-index: 1;}
-        .gomoku-cell::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.5); z-index: 1;}
-        .gomoku-stone { width: 85%; height: 85%; border-radius: 50%; z-index: 2; position: relative;}
-
-        /* お絵かき伝言 */
-        #draw-canvas { touch-action: none; background: white; border: 2px solid #ccc; border-radius: 8px; width: 100%; max-width: 500px; height: 300px; cursor: crosshair; }
-        .color-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; }
-        .color-btn:hover { transform: scale(1.1); }
-        .color-selected { outline: 3px solid #6366f1; outline-offset: 2px; }
+        /* 爆弾のドクドクアニメーション */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .bomb-pulse {
+            animation: heartbeat 0.6s infinite ease-in-out;
+        }
+        .bomb-panic {
+            animation: heartbeat 0.25s infinite ease-in-out;
+        }
 
         /* トグルスイッチ */
-        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
-        
+        .toggle-checkbox:checked { right: 0; border-color: #ef4444; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #ef4444; }
+
         html, body { min-height: 100vh; margin: 0; padding: 0; }
     </style>
 </head>
-<body class="font-sans transition-colors duration-1000 bg-slate-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200">
+<body class="font-sans transition-colors duration-1000 bg-slate-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200 select-none">
     
-    <div id="app" class="w-full max-w-4xl mx-auto flex flex-col items-center justify-center p-2 sm:p-4 min-h-screen relative">
+    <div id="app" class="w-full max-w-xl mx-auto flex flex-col items-center justify-center p-3 sm:p-4 min-h-screen relative">
         
-        <div class="w-full flex justify-end mb-2 gap-4">
+        <!-- 上部バー (配信者モード設定) -->
+        <div class="w-full flex justify-end mb-2 gap-3">
             <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-slate-700 transition-colors">
                 <span class="text-xs font-bold text-gray-600 dark:text-gray-300">📹 配信者モード</span>
-                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                <div class="relative inline-block w-10 mr-1 align-middle select-none transition duration-200 ease-in">
                     <input type="checkbox" v-model="isStreamerMode" name="toggle" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white dark:bg-slate-200 border-4 appearance-none cursor-pointer z-10 transition-all duration-300" style="top: 2px; left: 2px;"/>
                     <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-slate-600 cursor-pointer transition-colors duration-300"></label>
                 </div>
             </div>
         </div>
 
-        <div class="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-slate-700 transition-colors duration-500">
+        <div class="w-full bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-700 transition-colors duration-500">
             
-            <div class="bg-indigo-600 dark:bg-indigo-900 text-white p-4 text-center relative transition-colors duration-500">
-                <h1 class="text-2xl sm:text-3xl font-black tracking-widest">🎲 なんでもゲーム</h1>
+            <!-- ヘッダー -->
+            <div class="bg-rose-600 dark:bg-rose-900 text-white p-4 text-center relative transition-colors duration-500">
+                <h1 class="text-2xl sm:text-3xl font-black tracking-widest flex items-center justify-center gap-2">
+                    <span>💣</span> ボム・ワード
+                </h1>
                 <button @click="toggleNightMode" class="absolute right-4 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform" :title="isNightMode ? 'ライトモード' : 'ナイトモード'">
                     {{ isNightMode ? '☀️' : '🌙' }}
                 </button>
             </div>
 
-            <!-- 共通ログイン -->
-            <div v-if="!isGameStarted" class="p-6 sm:p-8 border-b-8 border-gray-100 dark:border-slate-900 bg-gray-50 dark:bg-slate-800 transition-colors">
-                <h2 class="font-black text-lg mb-4 text-gray-800 dark:text-gray-200">共通ログイン（ゲスト用）</h2>
-                <div class="space-y-4">
+            <div class="p-6 sm:p-8">
+
+                <!-- 画面1: ホーム画面 -->
+                <div v-if="screen === 'home'" class="space-y-6">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">あなたの名前</label>
-                        <input v-model="globalName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" placeholder="（例）たろう">
+                        <input v-model="myName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-rose-500 outline-none transition" placeholder="（例）たろう">
                     </div>
-                    <div class="p-5 border-2 border-emerald-100 dark:border-emerald-800/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex flex-col justify-between transition-colors">
-                        <div>
-                            <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">教えてもらったIDで参加</h3>
-                            <input v-model="globalInputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-md shadow-sm text-lg font-mono mb-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-colors text-center tracking-widest uppercase" placeholder="W- / J- / R- / C- / G- / D- / S- / B-">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- 部屋作成 -->
+                        <div class="p-5 border-2 border-rose-100 dark:border-rose-950 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex flex-col justify-between transition">
+                            <div>
+                                <h3 class="text-lg font-bold text-rose-900 dark:text-rose-300 mb-1">部屋を作る</h3>
+                                <p class="text-xs text-rose-700 dark:text-rose-400 mb-4">ホストとして全員を招待します。</p>
+                            </div>
+                            <button @click="createRoom" :disabled="!myName" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl disabled:opacity-50 transition shadow-md">
+                                部屋を作成 (ホスト)
+                            </button>
                         </div>
-                        <button @click="smartJoinRoom" :disabled="!globalName || !globalInputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition shadow-md">
-                            自動判定して参加
+
+                        <!-- 部屋参加 -->
+                        <div class="p-5 border-2 border-emerald-100 dark:border-emerald-950 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex flex-col justify-between transition">
+                            <div>
+                                <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">部屋に参加</h3>
+                                <input v-model="inputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm text-center font-mono uppercase tracking-widest text-sm mb-3 outline-none" placeholder="BW-xxxxxx">
+                            </div>
+                            <button @click="joinRoom" :disabled="!myName || !inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl disabled:opacity-50 transition shadow-md">
+                                参加する
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="errorMsg" class="text-red-500 text-sm text-center font-bold">{{ errorMsg }}</p>
+                </div>
+
+                <!-- 画面2: ロビー画面 -->
+                <div v-if="screen === 'lobby'" class="space-y-6">
+                    <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-700/50 text-center shadow-inner transition">
+                        <p class="text-xs text-amber-800 dark:text-amber-300 font-bold mb-2">みんなにルームIDを教えてね！ (2人以上)</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-xl border-2 border-amber-300 tracking-wider">
+                                {{ displayRoomId(roomId) }}
+                            </code>
+                            <button @click="copyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl transition">コピー</button>
+                        </div>
+                        <p v-if="isStreamerMode" class="text-[10px] text-rose-500 font-bold mt-2">※配信者モードON (画面上は伏字です)</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold mb-3 flex items-center justify-between dark:text-white">
+                            <span>👥 参加者</span>
+                            <span class="text-sm bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-full">{{ players.length }}人</span>
+                        </h3>
+                        <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-700">
+                            <li v-for="p in players" :key="p.id" class="px-5 py-3 flex items-center justify-between">
+                                <span class="font-bold dark:text-white">{{ p.name }}</span>
+                                <div class="space-x-2 flex items-center">
+                                    <span v-if="p.id === peerId" class="text-xs bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">あなた</span>
+                                    <span v-if="p.isHost" class="text-xs bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-2 py-1 rounded font-bold">ホスト</span>
+                                    <button v-if="isHost && !p.isHost" @click="kickPlayer(p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-if="isHost" class="border-t-2 dark:border-slate-700 pt-5">
+                        <button @click="startGame" :disabled="players.length < 2" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-2xl text-lg shadow-lg disabled:opacity-40 transition">
+                            ゲーム開始 ({{ players.length }}人で遊ぶ)
                         </button>
                     </div>
-                    <p v-if="globalErrorMsg" class="text-red-500 text-sm text-center font-bold">{{ globalErrorMsg }}</p>
-                </div>
-            </div>
-
-            <!-- タブナビゲーション (8種類) -->
-            <div v-if="!isGameStarted" class="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
-                <button @click="switchTab('wordwolf')" :class="currentTab === 'wordwolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🔍 ワードウルフ</button>
-                <button @click="switchTab('werewolf')" :class="currentTab === 'werewolf' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🌕 人狼</button>
-                <button @click="switchTab('synchro')" :class="currentTab === 'synchro' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">💯 シンクロ</button>
-                <button @click="switchTab('blind')" :class="currentTab === 'blind' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🃏 ブラインド</button>
-                
-                <button @click="switchTab('draw')" :class="currentTab === 'draw' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">🎨 お絵かき伝言</button>
-                <button @click="switchTab('reversi')" :class="currentTab === 'reversi' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ リバーシ</button>
-                <button @click="switchTab('gomoku')" :class="currentTab === 'gomoku' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">⚫⚪ 五目並べ</button>
-                <button @click="switchTab('chess')" :class="currentTab === 'chess' ? 'border-b-4 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 font-black' : 'text-gray-500 dark:text-gray-400'" class="py-3 text-center font-bold transition text-xs sm:text-sm">♟️ チェス</button>
-            </div>
-
-            <div class="p-4 sm:p-6">
-                
-                <!-- ワードウルフ -->
-                <div v-if="currentTab === 'wordwolf'">
-                    <div v-if="ww.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">ワードウルフを作る</h3>
-                        <button @click="wwCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="ww.screen === 'lobby'" class="space-y-6">
-                        <div class="text-center">
-                            <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(ww.roomId) }}</code>
-                                <button @click="copyText(ww.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                            </div>
-                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ ww.players.length }}人)</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
-                                <li v-for="p in ww.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === ww.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="ww.isHost && !p.isHost" @click="kickPlayer('wordwolf', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="ww.isHost" class="border-t-2 dark:border-slate-700 pt-4">
-                            <label class="dark:text-white">ウルフの人数</label>
-                            <input v-model.number="ww.wolfCount" type="number" min="1" class="border dark:border-slate-600 p-1 w-full bg-white dark:bg-slate-700 dark:text-white rounded">
-                            <button @click="wwStartGame" :disabled="ww.players.length < 3" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
-                        </div>
-                    </div>
-                    <div v-if="ww.screen === 'game'" class="text-center space-y-6">
-                        <h2 class="dark:text-gray-400">お題</h2><p class="text-4xl font-black dark:text-white">{{ ww.myTheme }}</p>
-                        <div v-if="ww.isHost"><button @click="wwEndGame" class="w-full bg-slate-800 dark:bg-slate-700 text-white py-4 rounded-xl">結果発表</button></div>
-                    </div>
-                    <div v-if="ww.screen === 'result'" class="text-center space-y-4">
-                        <h2 class="text-2xl font-black text-rose-500">結果</h2>
-                        <div v-for="p in ww.resultData" class="border dark:border-slate-600 p-2 dark:text-white rounded">{{ p.role === 'wolf' ? '🐺' : '🧑‍🌾' }} {{ p.name }} : {{ p.theme }}</div>
-                        <button v-if="ww.isHost" @click="wwBackToLobby" class="bg-indigo-600 text-white py-3 px-8 rounded-xl">ロビーへ</button>
+                    <div v-else class="text-center text-sm font-bold text-gray-400 py-4">
+                        ホストが開始するのをお待ちください...☕
                     </div>
                 </div>
 
-                <!-- 人狼 -->
-                <div v-if="currentTab === 'werewolf'">
-                    <div v-if="wwr.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">人狼の部屋を作る</h3>
-                        <button @click="wwrCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="wwr.screen === 'lobby'" class="space-y-6">
-                        <div class="text-center">
-                            <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(wwr.roomId) }}</code>
-                                <button @click="copyText(wwr.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                            </div>
-                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ wwr.players.length }}人)</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
-                                <li v-for="p in wwr.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === wwr.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="wwr.isHost && !p.isHost" @click="kickPlayer('werewolf', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="wwr.isHost" class="border-t-2 dark:border-slate-700 pt-4">
-                            <button @click="wwrStartGame" :disabled="wwr.players.length < 3" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
-                        </div>
-                    </div>
-                    <div v-if="wwr.screen === 'game'" class="text-center space-y-4">
-                        <h2 class="dark:text-white">{{ wwr.phase }} フェーズ</h2><p class="text-2xl font-black dark:text-white">役職: {{ wwr.myRole }}</p>
-                        <div v-if="wwr.isHost"><button @click="wwrNextPhase" class="w-full bg-slate-800 dark:bg-slate-700 text-white py-4 rounded-xl">次のフェーズへ強制進行</button></div>
-                    </div>
-                    <div v-if="wwr.screen === 'result'" class="text-center space-y-4">
-                        <h2 class="text-2xl font-black text-rose-500">勝者: {{ wwr.winner }}</h2>
-                        <button v-if="wwr.isHost" @click="wwrBackToLobby" class="bg-indigo-600 text-white py-3 px-8 rounded-xl">ロビーへ</button>
-                    </div>
-                </div>
-
-                <!-- リバーシ -->
-                <div v-if="currentTab === 'reversi'">
-                    <div v-if="rev.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">リバーシの部屋を作る</h3>
-                        <button @click="revCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="rev.screen === 'lobby'" class="text-center space-y-4">
-                        <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(rev.roomId) }}</code>
-                            <button @click="copyText(rev.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                        </div>
-                        <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ rev.players.length }} / 2人</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
-                                <li v-for="p in rev.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === rev.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="rev.isHost && !p.isHost" @click="kickPlayer('reversi', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <button v-if="rev.isHost && rev.players.length === 2" @click="revStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
-                    </div>
-                    <div v-if="rev.screen === 'game'" class="space-y-4 text-center">
-                        <div class="dark:text-white text-lg font-bold">{{ rev.turn === rev.myColor ? 'あなたの番です' : '相手の番です' }}</div>
-                        <div class="board-grid grid-8x8">
-                            <div v-for="(cell, index) in rev.board" :key="index" @click="revPlaceDisc(index)" class="board-cell reversi-cell" :class="{'valid-move': rev.turn === rev.myColor && revIsValidMove(index, rev.myColor)}">
-                                <div v-if="cell" class="reversi-disc" :class="cell === 'black' ? 'disc-black' : 'disc-white'"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="rev.screen === 'result'" class="text-center space-y-4">
-                        <h2 class="text-2xl dark:text-white">{{ rev.winner === rev.myColor ? '勝利！' : '敗北...' }}</h2>
-                        <button v-if="rev.isHost" @click="revBackToLobby" class="bg-indigo-600 text-white py-3 px-8 rounded-xl">ロビーへ</button>
-                    </div>
-                </div>
-
-                <!-- チェス -->
-                <div v-if="currentTab === 'chess'">
-                    <div v-if="chs.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">チェスの部屋を作る</h3>
-                        <button @click="chsCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="chs.screen === 'lobby'" class="text-center space-y-4">
-                        <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(chs.roomId) }}</code>
-                            <button @click="copyText(chs.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                        </div>
-                        <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ chs.players.length }} / 2人</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
-                                <li v-for="p in chs.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === chs.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="chs.isHost && !p.isHost" @click="kickPlayer('chess', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <button v-if="chs.isHost && chs.players.length === 2" @click="chsStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
-                    </div>
-                    <div v-if="chs.screen === 'game'" class="space-y-4 text-center">
-                        <div class="dark:text-white text-lg font-bold">{{ chs.turn === chs.myColor ? 'あなたの番です' : '相手の番です' }}</div>
-                        <div class="board-grid grid-8x8" :style="{ transform: chs.myColor === 'b' ? 'rotate(180deg)' : 'none' }">
-                            <div v-for="(cell, index) in chs.board" :key="index" @click="chsClickCell(index)" class="board-cell" :class="[(Math.floor(index/8)+index%8)%2===0 ? 'chess-light' : 'chess-dark', chs.selectedIndex===index?'chess-selected':'', chs.validMoves.includes(index)?'chess-valid':'']">
-                                <span v-if="cell" class="chess-piece" :style="{ transform: chs.myColor === 'b' ? 'rotate(180deg)' : 'none' }">{{ chsGetPieceChar(cell) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="chs.screen === 'result'" class="text-center space-y-4">
-                        <h2 class="text-2xl dark:text-white">{{ chs.winner === chs.myColor ? 'チェックメイト(勝利)!' : 'チェックメイト(敗北)' }}</h2>
-                        <button v-if="chs.isHost" @click="chsBackToLobby" class="bg-indigo-600 text-white py-3 px-8 rounded-xl">ロビーへ</button>
-                    </div>
-                </div>
-
-                <!-- 五目並べ -->
-                <div v-if="currentTab === 'gomoku'">
-                    <div v-if="gom.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 transition-colors">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">五目並べの部屋を作る</h3>
-                        <button @click="gomCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="gom.screen === 'lobby'" class="text-center space-y-4">
-                        <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(gom.roomId) }}</code>
-                            <button @click="copyText(gom.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                        </div>
-                        <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者: {{ gom.players.length }} / 2人</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left max-w-sm mx-auto">
-                                <li v-for="p in gom.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === gom.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="gom.isHost && !p.isHost" @click="kickPlayer('gomoku', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <button v-if="gom.isHost && gom.players.length === 2" @click="gomStartGame" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4">対戦開始！</button>
-                    </div>
-                    <div v-if="gom.screen === 'game'" class="space-y-4 text-center">
-                        <div class="dark:text-white text-lg font-bold mb-2">
-                            <span>{{ gom.turn === gom.myColor ? 'あなたの番です' : '相手の番です' }}</span>
-                        </div>
-                        <div class="board-grid grid-15x15 mx-auto">
-                            <div v-for="(cell, index) in gom.board" :key="index" @click="gomPlaceStone(index)" class="board-cell gomoku-cell">
-                                <div v-if="cell" class="gomoku-stone" :class="cell === 'black' ? 'disc-black' : 'disc-white'"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="gom.screen === 'result'" class="text-center space-y-4">
-                        <h2 class="text-3xl font-black mb-2 dark:text-white">ゲーム終了</h2>
-                        <div class="text-xl font-bold p-6 dark:text-white text-rose-500">{{ gom.winner === gom.myColor ? '🎉 あなたの勝利！' : '相手の勝利...' }}</div>
-                        <button v-if="gom.isHost" @click="gomBackToLobby" class="bg-indigo-600 text-white py-3 px-8 rounded-xl">ロビーへ</button>
-                    </div>
-                </div>
-
-                <!-- お絵かき伝言ゲーム -->
-                <div v-if="currentTab === 'draw'">
-                    <div v-if="drw.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 transition-colors">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-1">お絵かき伝言を作る</h3>
-                        <p class="text-xs mb-4 dark:text-gray-400">3人以上で遊ぶのがおすすめです。</p>
-                        <button @click="drwCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
+                <!-- 画面3: ゲーム中画面 -->
+                <div v-if="screen === 'game'" class="space-y-6 flex flex-col items-center">
                     
-                    <div v-if="drw.screen === 'lobby'" class="text-center space-y-4">
-                        <div class="flex items-center justify-center gap-2 mb-2">
-                            <code class="text-2xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(drw.roomId) }}</code>
-                            <button @click="copyText(drw.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
+                    <!-- プレイヤー一覧とライフ表示 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
+                        <div v-for="p in players" :key="p.id" 
+                            class="p-3 border-2 rounded-2xl flex flex-col items-center justify-center transition-all duration-300"
+                            :class="{
+                                'bg-rose-100 dark:bg-rose-950/60 border-rose-500 shadow-md scale-105 ring-2 ring-rose-400': currentHolderId === p.id,
+                                'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 opacity-80': currentHolderId !== p.id,
+                                'opacity-30 line-through': p.lives <= 0
+                            }">
+                            <div class="text-xs font-bold truncate max-w-[100px] mb-1 dark:text-white">{{ p.name }}</div>
+                            <div class="flex gap-1 text-sm">
+                                <span v-for="i in 3" :key="i">
+                                    {{ i <= p.lives ? '❤️' : '🖤' }}
+                                </span>
+                            </div>
                         </div>
-                        <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-                        
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ drw.players.length }}人)</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors text-left">
-                                <li v-for="p in drw.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === drw.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="drw.isHost && !p.isHost" @click="kickPlayer('draw', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <button v-if="drw.isHost" @click="drwStartGame" :disabled="drw.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 rounded-xl mt-4 disabled:opacity-50">ゲーム開始</button>
                     </div>
 
-                    <div v-if="drw.screen === 'write_theme'" class="text-center space-y-6">
-                        <h2 class="text-xl font-bold dark:text-white">最初のお題を書いてください</h2>
-                        <input v-model="drw.myInputTheme" type="text" class="w-full p-4 text-xl border-2 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-xl text-center" placeholder="（例）りんごを食べるゴリラ">
-                        <button @click="drwSubmitTheme" :disabled="!drw.myInputTheme || drw.hasSubmitted" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50">決定</button>
-                        <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
-                    </div>
-                    
-                    <div v-if="drw.screen === 'draw_turn'" class="space-y-4 flex flex-col items-center">
-                        <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 w-full rounded shadow-sm text-center">
-                            <p class="text-sm text-yellow-700 font-bold">このお題の絵を描いてください！</p>
-                            <p class="text-2xl font-black text-yellow-900 mt-1">{{ drw.currentTaskText }}</p>
+                    <!-- 爆弾アニメーションエリア -->
+                    <div class="py-4 text-center relative w-full flex flex-col items-center">
+                        <div class="text-7xl sm:text-8xl transition-transform duration-200" 
+                            :class="[
+                                isMyTurn ? 'bomb-panic' : 'bomb-pulse',
+                                isExploding ? 'scale-150' : ''
+                            ]">
+                            {{ isExploding ? '💥' : '💣' }}
                         </div>
-                        <canvas id="draw-canvas" @mousedown="drwStartDraw" @mousemove="drwDraw" @mouseup="drwEndDraw" @mouseout="drwEndDraw" @touchstart="drwStartDrawTouch" @touchmove="drwDrawTouch" @touchend="drwEndDraw"></canvas>
-                        <div class="flex justify-between w-full max-w-[500px] bg-white dark:bg-slate-700 p-2 rounded-lg shadow items-center border dark:border-slate-600">
-                            <div class="flex gap-2">
-                                <button v-for="c in ['#000000', '#ef4444', '#3b82f6', '#22c55e', '#eab308']" :key="c" @click="drw.penColor = c" class="color-btn" :class="{'color-selected': drw.penColor === c}" :style="{backgroundColor: c}"></button>
-                                <button @click="drw.penColor = '#ffffff'" class="color-btn flex items-center justify-center bg-white text-xs border-2 border-gray-300 text-black" :class="{'color-selected': drw.penColor === '#ffffff'}">消</button>
-                            </div>
-                            <div class="flex gap-2 items-center">
-                                <span class="text-xs font-bold text-gray-500 dark:text-gray-300">太さ:</span>
-                                <input type="range" v-model="drw.penWidth" min="1" max="20" class="w-20">
-                            </div>
+
+                        <!-- 誰の番かのアナウンス -->
+                        <div class="mt-4">
+                            <span v-if="isMyTurn" class="bg-rose-600 text-white font-black text-lg px-6 py-2 rounded-full shadow-lg animate-bounce inline-block">
+                                あなたの手元に爆弾があります！！
+                            </span>
+                            <span v-else class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold text-sm px-4 py-1.5 rounded-full inline-block">
+                                {{ currentHolder?.name }} が回答中...
+                            </span>
                         </div>
-                        <button @click="drwSubmitDrawing" :disabled="drw.hasSubmitted" class="w-full max-w-[500px] bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50">描き終わった！</button>
-                        <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
                     </div>
 
-                    <div v-if="drw.screen === 'guess_turn'" class="text-center space-y-4 flex flex-col items-center">
-                        <div class="bg-blue-100 border-l-4 border-blue-500 p-4 w-full rounded shadow-sm text-center">
-                            <p class="text-sm text-blue-700 font-bold">この絵は何を描いたものでしょうか？</p>
+                    <!-- お題エリア -->
+                    <div class="w-full bg-gradient-to-r from-amber-500 to-rose-500 p-1 rounded-2xl shadow-md">
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-[14px] text-center">
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">現在のクリア条件</p>
+                            <p class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-wider">
+                                {{ currentTheme }}
+                            </p>
                         </div>
-                        <img :src="drw.currentTaskImage" class="border-2 border-gray-300 rounded-lg w-full max-w-[500px] bg-white shadow-sm" alt="前の人の絵">
-                        <input v-model="drw.myInputGuess" type="text" class="w-full max-w-[500px] p-4 text-xl border-2 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-xl text-center mt-4" placeholder="何を描いた絵？">
-                        <button @click="drwSubmitGuess" :disabled="!drw.myInputGuess || drw.hasSubmitted" class="w-full max-w-[500px] bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:opacity-50 mt-2">決定</button>
-                        <p v-if="drw.hasSubmitted" class="text-gray-500 font-bold">他の人を待っています...</p>
                     </div>
 
-                    <div v-if="drw.screen === 'result'" class="space-y-6 flex flex-col items-center w-full">
-                        <h2 class="text-3xl font-black text-rose-500">結果発表アルバム 📖</h2>
-                        <div v-if="drw.albums.length > 0" class="w-full max-w-[500px] bg-white dark:bg-slate-700 p-4 rounded-xl shadow-lg border-2 border-gray-200 dark:border-slate-600">
-                            <h3 class="text-center font-bold text-gray-500 dark:text-gray-400 mb-4">アルバム {{ drw.currentAlbumIndex + 1 }} / {{ drw.albums.length }}</h3>
-                            <div class="space-y-6">
-                                <div v-for="(step, idx) in drw.albums[drw.currentAlbumIndex].history" :key="idx" class="border-b dark:border-slate-600 pb-4 last:border-0 relative pl-8">
-                                    <div class="absolute left-3 top-2 bottom-0 w-1 bg-indigo-200 dark:bg-indigo-900"></div>
-                                    <div class="absolute left-[8px] top-2 w-3 h-3 rounded-full bg-indigo-500 shadow"></div>
-                                    <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-1">{{ step.playerName }} さんの番</div>
-                                    <div v-if="step.type === 'theme' || step.type === 'guess'" class="bg-gray-100 dark:bg-slate-800 p-3 rounded-lg font-black text-xl text-center shadow-inner dark:text-white">
-                                        {{ step.data }}
-                                    </div>
-                                    <div v-if="step.type === 'draw'" class="text-center">
-                                        <img :src="step.data" class="mx-auto border bg-white rounded shadow-sm max-w-full">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between mt-6">
-                                <button @click="drw.currentAlbumIndex--" :disabled="drw.currentAlbumIndex === 0" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 font-bold rounded disabled:opacity-30 dark:text-white">◀ 前のアルバム</button>
-                                <button @click="drw.currentAlbumIndex++" :disabled="drw.currentAlbumIndex === drw.albums.length - 1" class="px-4 py-2 bg-indigo-500 text-white font-bold rounded disabled:opacity-30">次のアルバム ▶</button>
-                            </div>
-                        </div>
-                        <button v-if="drw.isHost" @click="drwBackToLobby" class="w-full max-w-[500px] bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-xl shadow-md mt-4">ロビーに戻る</button>
+                    <!-- 単語入力フォーム (自分の番のみ入力可能) -->
+                    <div class="w-full space-y-2">
+                        <form @submit.prevent="submitWord" class="flex gap-2">
+                            <input v-model="inputWord" :disabled="!isMyTurn || isExploding" type="text" 
+                                class="flex-1 px-4 py-3 border-2 border-rose-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-2xl text-lg font-bold outline-none focus:border-rose-500 transition disabled:opacity-40 disabled:bg-gray-100" 
+                                placeholder="言葉を入力してパス！">
+                            <button type="submit" :disabled="!isMyTurn || !inputWord || isExploding" 
+                                class="bg-rose-600 hover:bg-rose-700 text-white font-black px-6 py-3 rounded-2xl shadow-lg disabled:opacity-40 transition">
+                                パス！
+                            </button>
+                        </form>
+                        <p v-if="inputError" class="text-red-500 text-xs text-center font-bold">{{ inputError }}</p>
                     </div>
+
+                    <!-- これまで出た単語ログ (重複禁止チェック用) -->
+                    <div class="w-full border-t dark:border-slate-700 pt-3 text-center">
+                        <p class="text-xs font-bold text-gray-400 mb-2">使われた言葉 (同じ単語は使えません)</p>
+                        <div class="flex flex-wrap justify-center gap-1.5 max-h-24 overflow-y-auto p-1">
+                            <span v-for="w in usedWords" :key="w" class="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold px-2 py-1 rounded-md">
+                                {{ w }}
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- 💯 シンクロ・パーセント (NEW) -->
-                <div v-if="currentTab === 'synchro'">
-                    <div v-if="snc.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">シンクロ・パーセントを作る</h3>
-                        <button @click="sncCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
+                <!-- 画面4: 勝敗決着画面 -->
+                <div v-if="screen === 'result'" class="text-center space-y-6 py-4">
+                    <div class="text-6xl animate-bounce">🏆</div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-500 dark:text-gray-400">生き残りチャンピオン！</p>
+                        <h2 class="text-4xl font-black text-rose-600 dark:text-rose-400 mt-2">{{ winnerName }}</h2>
                     </div>
-                    <div v-if="snc.screen === 'lobby'" class="space-y-6">
-                        <div class="text-center">
-                            <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(snc.roomId) }}</code>
-                                <button @click="copyText(snc.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                            </div>
-                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ snc.players.length }}人)</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
-                                <li v-for="p in snc.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === snc.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="snc.isHost && !p.isHost" @click="kickPlayer('synchro', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="snc.isHost" class="border-t-2 dark:border-slate-700 pt-4">
-                            <button @click="sncStartGame" :disabled="snc.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
-                        </div>
-                    </div>
-                    <div v-if="snc.screen === 'game'" class="text-center space-y-6">
-                        <div class="bg-indigo-50 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 p-4 rounded-xl">
-                            <h2 class="font-bold text-gray-500 dark:text-gray-400 mb-2">今回のお題</h2>
-                            <p class="text-xl font-black text-indigo-900 dark:text-indigo-200">{{ snc.currentTheme }}</p>
-                        </div>
-                        <div>
-                            <h2 class="dark:text-gray-400 font-bold mb-2">あなたの数字</h2>
-                            <p class="text-6xl font-black text-rose-500">{{ snc.myNumber }}</p>
-                        </div>
-                        <p class="text-gray-600 dark:text-gray-300 font-bold bg-gray-100 dark:bg-slate-700 py-3 rounded-lg transition-colors">数字を言わずに、みんなで話し合って小さい順を予想しよう🗣️</p>
-                        <div v-if="snc.isHost"><button @click="sncEndGame" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg mt-4">答え合わせ (全員の数字を公開)</button></div>
-                    </div>
-                    <div v-if="snc.screen === 'result'" class="text-center space-y-6">
-                        <h2 class="text-2xl font-black text-rose-500">全員の数字</h2>
-                        <div class="space-y-2">
-                            <div v-for="(p, index) in snc.resultData" :key="p.id" class="p-3 border-2 rounded-xl flex items-center justify-between" :class="index > 0 && snc.resultData[index-1].number > p.number ? 'bg-red-50 dark:bg-red-900/30 border-red-300' : 'bg-white dark:bg-slate-700 dark:border-slate-600'">
-                                <span class="font-bold dark:text-white">{{ p.name }}</span>
-                                <span class="text-2xl font-black" :class="index > 0 && snc.resultData[index-1].number > p.number ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-400'">{{ p.number }}</span>
-                            </div>
-                        </div>
-                        <p class="text-sm font-bold text-gray-500 dark:text-gray-400">※上から数字が小さい順に並んでいれば成功です！(赤くなっている所は順番ミス)</p>
-                        <button v-if="snc.isHost" @click="sncBackToLobby" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-md w-full">ロビーへ</button>
-                    </div>
-                </div>
 
-                <!-- 🃏 ブラインド・ナンバー (NEW) -->
-                <div v-if="currentTab === 'blind'">
-                    <div v-if="bnd.screen === 'home'" class="p-5 border-2 border-indigo-100 dark:border-indigo-800/50 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
-                        <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300">ブラインド・ナンバーを作る</h3>
-                        <button @click="bndCreateRoom" :disabled="!globalName" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg mt-2">部屋を作成 (ホスト)</button>
-                    </div>
-                    <div v-if="bnd.screen === 'lobby'" class="space-y-6">
-                        <div class="text-center">
-                            <div class="flex items-center justify-center gap-2 mb-2">
-                                <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-lg border-2 border-amber-300 select-all transition-colors">{{ displayRoomId(bnd.roomId) }}</code>
-                                <button @click="copyText(bnd.roomId)" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg transition shrink-0">IDをコピー</button>
-                            </div>
-                            <p v-if="isStreamerMode" class="text-xs text-rose-500 font-bold">※配信者モードON: 画面には伏字で表示されています</p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold mb-2 dark:text-white">参加者 ({{ bnd.players.length }}人)</h3>
-                            <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
-                                <li v-for="p in bnd.players" :key="p.id" class="px-5 py-3 flex items-center justify-between bg-white dark:bg-slate-700 transition-colors">
-                                    <span class="font-bold text-gray-700 dark:text-white">{{ p.name }}</span>
-                                    <div class="space-x-2 flex items-center">
-                                        <span v-if="p.id === bnd.peerId" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-bold">あなた</span>
-                                        <span v-if="p.isHost" class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                        <button v-if="bnd.isHost && !p.isHost" @click="kickPlayer('blind', p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div v-if="bnd.isHost" class="border-t-2 dark:border-slate-700 pt-4">
-                            <button @click="bndStartGame" :disabled="bnd.players.length < 2" class="w-full bg-rose-500 text-white font-black py-4 mt-4 rounded-xl disabled:opacity-50">ゲーム開始</button>
-                        </div>
-                    </div>
-                    <div v-if="bnd.screen === 'game'" class="text-center space-y-6">
-                        <p class="text-gray-600 dark:text-gray-300 font-bold bg-gray-100 dark:bg-slate-700 py-3 rounded-lg transition-colors">見えている数字から全員の合計値を予想しよう！</p>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div v-for="p in bnd.visiblePlayers" :key="p.id" class="border-2 rounded-xl p-4 flex flex-col items-center bg-white dark:bg-slate-700 dark:border-slate-600 shadow-sm relative" :class="{'border-indigo-400': p.id === bnd.peerId}">
-                                <span class="font-bold mb-2 dark:text-white text-sm truncate w-full">{{ p.name }}</span>
-                                <div v-if="p.id === bnd.peerId" class="text-4xl font-black text-gray-300 dark:text-gray-500">❓</div>
-                                <div v-else class="text-4xl font-black" :class="p.card < 0 ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'">{{ p.card === 'x2' || p.card === 'MAX->0' ? p.card : p.card }}</div>
-                                <div v-if="p.id === bnd.peerId" class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">あなた</div>
-                            </div>
-                        </div>
-
-                        <div v-if="bnd.isHost" class="border-t-2 dark:border-slate-700 pt-4 mt-6">
-                            <button @click="bndEndGame" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg">「ダウト！」で結果発表</button>
-                        </div>
-                        <div v-else class="text-sm text-gray-400 font-bold mt-8">誰かが「ダウト」と言ったらホストが結果発表を押してください</div>
-                    </div>
-                    <div v-if="bnd.screen === 'result'" class="text-center space-y-6">
-                        <h2 class="text-2xl font-black text-rose-500">結果発表</h2>
-                        <div class="bg-indigo-50 dark:bg-indigo-900/50 border-4 border-indigo-200 dark:border-indigo-700/50 rounded-2xl p-6 shadow-inner">
-                            <p class="font-bold text-gray-500 dark:text-gray-400 mb-1">全員の合計値</p>
-                            <p class="text-6xl font-black text-indigo-900 dark:text-indigo-200">{{ bnd.trueTotal }}</p>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div v-for="p in bnd.resultData" :key="p.id" class="border rounded-xl p-3 flex flex-col items-center bg-white dark:bg-slate-700 dark:border-slate-600">
-                                <span class="font-bold text-xs mb-1 dark:text-white truncate w-full">{{ p.name }}</span>
-                                <span class="text-2xl font-black" :class="p.card < 0 ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'">{{ p.card }}</span>
-                            </div>
-                        </div>
-
-                        <button v-if="bnd.isHost" @click="bndBackToLobby" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl shadow-md w-full">ロビーへ</button>
+                    <div v-if="isHost" class="border-t-2 dark:border-slate-700 pt-6">
+                        <button @click="backToLobby" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-slate-900 transition">
+                            ロビーに戻る
+                        </button>
                     </div>
                 </div>
 
@@ -549,94 +235,124 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, watch, watchEffect, nextTick } = Vue;
+        const { createApp, ref, reactive, computed, watch } = Vue;
 
         createApp({
             setup() {
-                const currentTab = ref('wordwolf');
+                const screen = ref('home');
+                const errorMsg = ref('');
+                const inputError = ref('');
+
                 const isNightMode = ref(false);
                 const isStreamerMode = ref(false);
-                
-                const globalName = ref(localStorage.getItem('my_party_game_name') || '');
-                const globalInputRoomId = ref('');
-                const globalErrorMsg = ref('');
 
-                // 接続管理・状態参照用オブジェクト
-                const connectionsMap = {
-                    'wordwolf': () => wwConnections,
-                    'werewolf': () => wwrConnections,
-                    'reversi': () => revConnections,
-                    'chess': () => chsConnections,
-                    'gomoku': () => gomConnections,
-                    'draw': () => drwConnections,
-                    'synchro': () => sncConnections,
-                    'blind': () => bndConnections
-                };
-                const stateMap = {
-                    'wordwolf': () => ww,
-                    'werewolf': () => wwr,
-                    'reversi': () => rev,
-                    'chess': () => chs,
-                    'gomoku': () => gom,
-                    'draw': () => drw,
-                    'synchro': () => snc,
-                    'blind': () => bnd
-                };
-                const broadcastMap = {
-                    'wordwolf': () => wwBroadcast({ type: 'players', players: ww.players }),
-                    'werewolf': () => { const state = { type: 'state', players: wwr.players, dayCount: wwr.dayCount, phase: wwr.phase, announceLog: wwr.announceLog, actedPlayers: wwrActedPlayers }; Object.values(wwrConnections).forEach(c=>{if(c.open)c.send(state);}); },
-                    'reversi': () => { Object.values(revConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:rev.players});}); },
-                    'chess': () => { Object.values(chsConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:chs.players});}); },
-                    'gomoku': () => { Object.values(gomConnections).forEach(c=>{if(c.open)c.send({type:'joined', players:gom.players});}); },
-                    'draw': () => { Object.values(drwConnections).forEach(c=>{if(c.open)c.send({type:'players', players:drw.players});}); },
-                    'synchro': () => { Object.values(sncConnections).forEach(c=>{if(c.open)c.send({type:'players', players:snc.players});}); },
-                    'blind': () => { Object.values(bndConnections).forEach(c=>{if(c.open)c.send({type:'players', players:bnd.players});}); }
-                };
+                // ユーザー情報
+                const myName = ref(localStorage.getItem('my_party_game_name') || '');
+                const peerId = ref('');
+                const isHost = ref(false);
+                const roomId = ref('');
+                const inputRoomId = ref('');
+                const players = reactive([]); // { id, name, isHost, lives }
 
-                const kickPlayer = (gameType, targetId) => {
-                    if(!confirm('このプレイヤーをキックしますか？')) return;
-                    const conns = connectionsMap[gameType]();
-                    const state = stateMap[gameType]();
-                    if (conns[targetId]) {
-                        if(conns[targetId].open) {
-                            conns[targetId].send({ type: 'kicked' });
-                            setTimeout(() => {
-                                conns[targetId].close();
-                                delete conns[targetId];
-                            }, 500);
-                        }
+                // ゲームステート
+                const currentHolderId = ref('');
+                const currentTheme = ref('');
+                const inputWord = ref('');
+                const usedWords = reactive([]);
+                const isExploding = ref(false);
+                const winnerName = ref('');
+
+                let peer = null;
+                const connections = {};
+                let hostConn = null;
+                let bombTimer = null;
+
+                // ==========================================
+                // Web Audio API による効果音合成 (外部ファイル不要)
+                // ==========================================
+                let audioCtx = null;
+                const initAudio = () => {
+                    if (!audioCtx) {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     }
-                    state.players = state.players.filter(p => p.id !== targetId);
-                    broadcastMap[gameType]();
                 };
 
-                const handleKicked = () => {
-                    globalErrorMsg.value = 'ホストによってルームからキックされました。';
-                    const activeState = stateMap[currentTab.value]();
-                    if(activeState) { activeState.screen = 'home'; activeState.roomId = ''; activeState.players = []; }
+                // チクタク音
+                const playTickSound = (isFast = false) => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(isFast ? 1200 : 800, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
                 };
 
-                const displayRoomId = (id) => {
-                    if (!id) return '';
-                    if (!isStreamerMode.value) return id;
-                    const parts = id.split('-');
-                    if(parts.length > 1) { return parts[0] + '-' + '*'.repeat(parts[1].length); }
-                    return '*'.repeat(id.length);
+                // パス成功音
+                const playPassSound = () => {
+                    if (!audioCtx) return;
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.2);
                 };
 
-                const isGameStarted = computed(() => {
-                    return (currentTab.value === 'wordwolf' && ww.screen !== 'home' && ww.screen !== 'lobby') ||
-                           (currentTab.value === 'werewolf' && wwr.screen !== 'home' && wwr.screen !== 'lobby') ||
-                           (currentTab.value === 'reversi' && rev.screen !== 'home' && rev.screen !== 'lobby') ||
-                           (currentTab.value === 'chess' && chs.screen !== 'home' && chs.screen !== 'lobby') ||
-                           (currentTab.value === 'gomoku' && gom.screen !== 'home' && gom.screen !== 'lobby') ||
-                           (currentTab.value === 'draw' && drw.screen !== 'home' && drw.screen !== 'lobby') ||
-                           (currentTab.value === 'synchro' && snc.screen !== 'home' && snc.screen !== 'lobby') ||
-                           (currentTab.value === 'blind' && bnd.screen !== 'home' && bnd.screen !== 'lobby');
-                });
+                // 爆発音 (ホワイトノイズ＋急激なローパスフィルター)
+                const playExplosionSound = () => {
+                    if (!audioCtx) return;
+                    const now = audioCtx.currentTime;
+                    const bufferSize = audioCtx.sampleRate * 1.5;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1; // ノイズ
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
 
-                watch(globalName, (newVal) => localStorage.setItem('my_party_game_name', newVal));
-                const copyText = (text) => { navigator.clipboard.writeText(text); alert('ルームIDをコピーしました！'); };
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, now);
+                    filter.frequency.exponentialRampToValueAtTime(30, now + 1.2);
+
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(1.0, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start();
+                };
+
+                // ==========================================
+                // お題リスト (パスするごとにランダム出題)
+                // ==========================================
+                const themeList = [
+                    '「あ」で始まる言葉', '「い」で始まる言葉', '「う」で始まる言葉', '「え」で始まる言葉', '「お」で始まる言葉',
+                    '「か」で始まる言葉', '「き」で始まる言葉', '「す」で始まる言葉', '「た」で始まる言葉', '「な」で始まる言葉',
+                    '「は」で始まる言葉', '「ま」で始まる言葉', '「や」で始まる言葉', '「ら」で始まる言葉', '「わ」で始まる言葉',
+                    '3文字の言葉', '4文字の言葉', '5文字の言葉',
+                    '食べ物・飲み物', '赤いもの', '丸いもの', '重いもの', '冷たいもの',
+                    '動物・生き物', 'コンビニで買えるもの', '学校にあるもの', 'カタカナの言葉'
+                ];
+
+                const getRandomTheme = () => themeList[Math.floor(Math.random() * themeList.length)];
+
+                // ローカルストレージに名前保存
+                watch(myName, (val) => localStorage.setItem('my_party_game_name', val));
 
                 const toggleNightMode = () => {
                     isNightMode.value = !isNightMode.value;
@@ -644,196 +360,251 @@
                     else document.documentElement.classList.remove('dark');
                 };
 
-                const switchTab = (tab) => { currentTab.value = tab; globalErrorMsg.value = ''; };
-                const generatePrefixedId = (prefix) => prefix + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-
-                const smartJoinRoom = () => {
-                    globalErrorMsg.value = '';
-                    const rawId = globalInputRoomId.value.trim().toUpperCase();
-                    if (rawId.startsWith('W-')) { currentTab.value = 'wordwolf'; ww.myName = globalName.value; ww.inputRoomId = rawId; wwJoinRoom(); } 
-                    else if (rawId.startsWith('J-')) { currentTab.value = 'werewolf'; wwr.myName = globalName.value; wwr.inputRoomId = rawId; wwrJoinRoom(); } 
-                    else if (rawId.startsWith('R-')) { currentTab.value = 'reversi'; rev.myName = globalName.value; rev.inputRoomId = rawId; revJoinRoom(); }
-                    else if (rawId.startsWith('C-')) { currentTab.value = 'chess'; chs.myName = globalName.value; chs.inputRoomId = rawId; chsJoinRoom(); }
-                    else if (rawId.startsWith('G-')) { currentTab.value = 'gomoku'; gom.myName = globalName.value; gom.inputRoomId = rawId; gomJoinRoom(); }
-                    else if (rawId.startsWith('D-')) { currentTab.value = 'draw'; drw.myName = globalName.value; drw.inputRoomId = rawId; drwJoinRoom(); }
-                    else if (rawId.startsWith('S-')) { currentTab.value = 'synchro'; snc.myName = globalName.value; snc.inputRoomId = rawId; sncJoinRoom(); }
-                    else if (rawId.startsWith('B-')) { currentTab.value = 'blind'; bnd.myName = globalName.value; bnd.inputRoomId = rawId; bndJoinRoom(); }
-                    else { globalErrorMsg.value = 'IDの形式が正しくありません'; }
+                const displayRoomId = (id) => {
+                    if (!id) return '';
+                    if (!isStreamerMode.value) return id;
+                    const parts = id.split('-');
+                    return parts[0] + '-' + '•'.repeat(parts[1].length);
                 };
 
-                // ==========================================
-                //  1. ワードウルフ
-                // ==========================================
-                const wwThemePairs = [ ['りんご', 'みかん'], ['犬', '猫'], ['うどん', 'そば'], ['コーラ', 'サイダー'], ['海', '山'], ['動物園', '水族館'], ['野球', 'サッカー'], ['遊園地', '映画館'], ['パン', 'ごはん'], ['マクドナルド', 'モスバーガー'], ['ラーメン', 'チャーハン'], ['カレー', 'シチュー'], ['夏', '冬'], ['スマホ', 'パソコン'], ['鉛筆', 'シャーペン'], ['東京', '大阪'], ['きのこの山', 'たけのこの里'], ['目玉焼き', 'ゆで卵'], ['お茶', '水'], ['朝', '夜'] ];
-                const ww = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], wolfCount: 1, myTheme: '', resultData: [] });
-                let wwPeer = null; const wwConnections = {}; let wwHostConn = null;
-                const wwCreateRoom = () => { ww.myName = globalName.value; ww.errorMsg = ''; const id = generatePrefixedId('W'); wwPeer = new Peer(id); wwPeer.on('open', (id) => { ww.peerId = id; ww.roomId = id; ww.isHost = true; ww.screen = 'lobby'; ww.players.push({ id: id, name: ww.myName, isHost: true }); }); wwPeer.on('connection', (conn) => { wwConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { ww.players.push({ id: conn.peer, name: data.name, isHost: false }); wwBroadcast({ type: 'players', players: ww.players }); } }); conn.on('close', () => { ww.players = ww.players.filter(p => p.id !== conn.peer); delete wwConnections[conn.peer]; wwBroadcast({ type: 'players', players: ww.players }); }); }); };
-                const wwBroadcast = (data) => { Object.values(wwConnections).forEach(c => { if(c.open) c.send(data); }); };
-                const wwStartGame = () => { const shuffledIds = [...ww.players].map(p => p.id).sort(() => 0.5 - Math.random()); const wolfIds = shuffledIds.slice(0, ww.wolfCount); const pair = wwThemePairs[Math.floor(Math.random() * wwThemePairs.length)]; const isFirstWolf = Math.random() > 0.5; const currentCitizenTheme = isFirstWolf ? pair[1] : pair[0]; const currentWolfTheme = isFirstWolf ? pair[0] : pair[1]; const assignments = {}; ww.players.forEach(p => { const isWolf = wolfIds.includes(p.id); assignments[p.id] = { role: isWolf ? 'wolf' : 'citizen', theme: isWolf ? currentWolfTheme : currentCitizenTheme }; }); Object.values(wwConnections).forEach(c => { if(c.open) c.send({ type: 'start', role: assignments[c.peer].role, theme: assignments[c.peer].theme }); }); ww.myTheme = assignments[ww.peerId].theme; ww.resultData.splice(0, ww.resultData.length, ...ww.players.map(p => ({ id: p.id, name: p.name, role: assignments[p.id].role, theme: assignments[p.id].theme }))); ww.screen = 'game'; };
-                const wwEndGame = () => { wwBroadcast({ type: 'result', data: ww.resultData }); ww.screen = 'result'; };
-                const wwBackToLobby = () => { wwBroadcast({ type: 'back_to_lobby' }); ww.screen = 'lobby'; };
-                const wwJoinRoom = () => { wwPeer = new Peer(); wwPeer.on('open', (id) => { ww.peerId = id; const targetId = ww.inputRoomId; wwHostConn = wwPeer.connect(targetId); wwHostConn.on('open', () => { ww.roomId = targetId; wwHostConn.send({ type: 'join', name: ww.myName }); ww.screen = 'lobby'; }); wwHostConn.on('data', (data) => { if (data.type === 'players') ww.players.splice(0, ww.players.length, ...data.players); else if (data.type === 'start') { ww.myTheme = data.theme; ww.screen = 'game'; } else if (data.type === 'result') { ww.resultData.splice(0, ww.resultData.length, ...data.data); ww.screen = 'result'; } else if (data.type === 'back_to_lobby') ww.screen = 'lobby'; else if (data.type === 'kicked') handleKicked(); }); wwHostConn.on('close', () => { if(ww.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; ww.screen = 'home'; }}); }); wwPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。'); };
+                const copyRoomId = () => {
+                    navigator.clipboard.writeText(roomId.value);
+                    alert('ルームIDをコピーしました！');
+                };
+
+                const currentHolder = computed(() => players.find(p => p.id === currentHolderId.value));
+                const isMyTurn = computed(() => currentHolderId.value === peerId.value);
 
                 // ==========================================
-                //  2. 人狼ゲーム
+                // ホスト処理
                 // ==========================================
-                const wwrRoleData = { villager: { name: '村人', icon: '🧑‍🌾' }, wolf: { name: '人狼', icon: '🐺' }, seer: { name: '占い師', icon: '🔮' }, knight: { name: '騎士', icon: '🛡️' } };
-                const wwr = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], settings: { wolf: 1, seer: 1, knight: 1 }, myRole: '', wolfAllies: [], dayCount: 1, phase: 'setup', announceLog: '', selectedTarget: null, seerResult: null, winner: '', finalResults: [] });
-                let wwrPeer = null; const wwrConnections = {}; let wwrHostConn = null; let wwrSecretRoles = {}; const wwrNightActions = { wolf: null, seer: null, knight: null }; const wwrVotes = {}; const wwrActedPlayers = [];
-                const wwrPhaseText = computed(() => { if(wwr.phase === 'night') return '夜（行動フェーズ）'; if(wwr.phase === 'day') return '昼（議論フェーズ）'; if(wwr.phase === 'vote') return '夕方（投票フェーズ）'; return ''; });
-                const wwrMyPlayerInfo = computed(() => wwr.players.find(p => p.id === wwr.peerId));
-                const wwrCanAct = computed(() => { if (!wwrMyPlayerInfo.value?.isAlive) return false; if (wwr.phase === 'night' && ['wolf', 'seer', 'knight'].includes(wwr.myRole) && !wwrActedPlayers.includes(wwr.peerId)) return true; if (wwr.phase === 'vote' && !wwrActedPlayers.includes(wwr.peerId)) return true; return false; });
-                const wwrIsWolfAlly = (id) => wwrSecretRoles[id] === 'wolf' || wwr.wolfAllies.some(a => wwr.players.find(p=>p.name===a)?.id === id);
-                const wwrCreateRoom = () => { wwr.myName = globalName.value; const id = generatePrefixedId('J'); wwrPeer = new Peer(id); wwrPeer.on('open', (id) => { wwr.peerId = id; wwr.roomId = id; wwr.isHost = true; wwr.screen = 'lobby'; wwr.players.push({ id: id, name: wwr.myName, isHost: true, isAlive: true }); }); wwrPeer.on('connection', (conn) => { wwrConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { wwr.players.push({ id: conn.peer, name: data.name, isHost: false, isAlive: true }); broadcastMap['werewolf'](); } else if (data.type === 'action') { if (wwr.phase === 'night') { const role = wwrSecretRoles[conn.peer]; if(role) wwrNightActions[role] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); if (role === 'seer') { const targetIsWolf = wwrSecretRoles[data.target] === 'wolf'; const targetName = wwr.players.find(p => p.id === data.target)?.name; if(wwrConnections[conn.peer] && wwrConnections[conn.peer].open) wwrConnections[conn.peer].send({ type: 'seer_result', name: targetName, isWolf: targetIsWolf }); } } else if (wwr.phase === 'vote') { wwrVotes[conn.peer] = data.target; if(!wwrActedPlayers.includes(conn.peer)) wwrActedPlayers.push(conn.peer); } } }); conn.on('close', () => { wwr.players = wwr.players.filter(p => p.id !== conn.peer); delete wwrConnections[conn.peer]; broadcastMap['werewolf'](); }); }); };
-                const wwrStartGame = () => { let deck = []; for(let i=0; i<wwr.settings.wolf; i++) deck.push('wolf'); for(let i=0; i<wwr.settings.seer; i++) deck.push('seer'); for(let i=0; i<wwr.settings.knight; i++) deck.push('knight'); while(deck.length < wwr.players.length) deck.push('villager'); deck = deck.sort(() => 0.5 - Math.random()); wwrSecretRoles = {}; wwr.players.forEach((p, idx) => { p.isAlive = true; wwrSecretRoles[p.id] = deck[idx]; }); wwr.players.forEach(p => { const r = wwrSecretRoles[p.id]; let allies = []; if (r === 'wolf') allies = wwr.players.filter(x => wwrSecretRoles[x.id] === 'wolf' && x.id !== p.id).map(x => x.name); if (p.id === wwr.peerId) { wwr.myRole = r; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...allies); } else { if(wwrConnections[p.id] && wwrConnections[p.id].open) wwrConnections[p.id].send({ type: 'secret', role: r, wolfAllies: allies }); } }); wwr.dayCount = 1; wwr.phase = 'night'; wwr.announceLog = `夜になりました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.screen = 'game'; broadcastMap['werewolf'](); };
-                const wwrJoinRoom = () => { wwrPeer = new Peer(); wwrPeer.on('open', (id) => { wwr.peerId = id; wwrHostConn = wwrPeer.connect(wwr.inputRoomId); wwrHostConn.on('open', () => { wwr.roomId = wwr.inputRoomId; wwrHostConn.send({ type: 'join', name: globalName.value }); wwr.screen = 'lobby'; }); wwrHostConn.on('data', (data) => { if (data.type === 'state') { wwr.players.splice(0, wwr.players.length, ...data.players); wwr.dayCount = data.dayCount; wwr.phase = data.phase; wwr.announceLog = data.announceLog; wwrActedPlayers.splice(0, wwrActedPlayers.length, ...data.actedPlayers); if(!wwrActedPlayers.includes(wwr.peerId)) { wwr.selectedTarget = null; if(wwr.phase !== 'night') wwr.seerResult = null; } if(wwr.screen !== 'result') wwr.screen = 'game'; } else if (data.type === 'secret') { wwr.myRole = data.role; wwr.wolfAllies.splice(0, wwr.wolfAllies.length, ...(data.wolfAllies || [])); } else if (data.type === 'seer_result') { wwr.seerResult = { name: data.name, isWolf: data.isWolf }; } else if (data.type === 'result') { wwr.winner = data.winner; wwr.finalResults.splice(0, wwr.finalResults.length, ...data.results); wwr.screen = 'result'; } else if (data.type === 'back_to_lobby') { wwr.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); wwrHostConn.on('close', () => { if(wwr.screen !== 'home') { globalErrorMsg.value = 'ホストとの接続が切れました。'; wwr.screen = 'home'; }}); }); wwrPeer.on('error', () => globalErrorMsg.value = 'ルームが見つかりません。'); };
-                const wwrNextPhase = () => { if (wwr.phase === 'night') { let diedId = null; const victimId = wwrNightActions.wolf; if (victimId && victimId !== wwrNightActions.knight) { diedId = victimId; const p = wwr.players.find(x => x.id === diedId); if(p) p.isAlive = false; } wwr.phase = 'day'; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; wwr.announceLog = diedId ? `朝になりました。\n${wwr.players.find(x => x.id === diedId).name} が殺されていました...。\n生存者で話し合いをしてください。` : `朝になりました。\n昨晩は誰も死にませんでした！\n生存者で話し合いをしてください。`; broadcastMap['werewolf'](); wwrCheckWinCondition(); } else if (wwr.phase === 'day') { wwr.phase = 'vote'; wwr.announceLog = `話し合いが終了しました。\n処刑する人を1人選んで投票してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); } else if (wwr.phase === 'vote') { const tally = {}; Object.values(wwrVotes).forEach(targetId => { tally[targetId] = (tally[targetId] || 0) + 1; }); let maxVotes = 0, executedId = null; for (const [id, count] of Object.entries(tally)) { if (count > maxVotes) { maxVotes = count; executedId = id; } } if (executedId) { const p = wwr.players.find(x => x.id === executedId); if(p) { p.isAlive = false; wwr.announceLog = `投票の結果、${p.name} が処刑されました。`; } } else { wwr.announceLog = `票がまとまらなかったため、本日の処刑者はいませんでした。`; } broadcastMap['werewolf'](); if(!wwrCheckWinCondition()) { setTimeout(() => { wwr.dayCount++; wwr.phase = 'night'; wwr.announceLog = `夜が来ました。\n役職者は行動を選択してください。`; wwrNightActions.wolf = null; wwrNightActions.seer = null; wwrNightActions.knight = null; Object.keys(wwrVotes).forEach(k => delete wwrVotes[k]); wwrActedPlayers.splice(0, wwrActedPlayers.length); wwr.selectedTarget = null; wwr.seerResult = null; broadcastMap['werewolf'](); }, 4000); } } };
-                const wwrCheckWinCondition = () => { const aliveWolves = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] === 'wolf').length; const aliveHumans = wwr.players.filter(p => p.isAlive && wwrSecretRoles[p.id] !== 'wolf').length; if (aliveWolves === 0) { wwrEndGame('human'); return true; } else if (aliveWolves >= aliveHumans) { wwrEndGame('wolf'); return true; } return false; };
-                const wwrEndGame = (winTeam) => { wwr.winner = winTeam; wwr.finalResults.splice(0, wwr.finalResults.length, ...wwr.players.map(p => ({ id: p.id, name: p.name, role: wwrSecretRoles[p.id], isAlive: p.isAlive }))); wwr.screen = 'result'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'result', winner: winTeam, results: wwr.finalResults }); }); };
-                const wwrBackToLobby = () => { wwr.screen = 'lobby'; wwr.phase = 'setup'; Object.values(wwrConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-                const wwrSubmitAction = () => { if (!wwr.selectedTarget) return; if (wwr.isHost) { if (wwr.phase === 'night') { wwrNightActions[wwr.myRole] = wwr.selectedTarget; if (wwr.myRole === 'seer') { wwr.seerResult = { name: wwr.players.find(p=>p.id===wwr.selectedTarget).name, isWolf: wwrSecretRoles[wwr.selectedTarget] === 'wolf' }; } } else if (wwr.phase === 'vote') { wwrVotes[wwr.peerId] = wwr.selectedTarget; } if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); } else { wwrHostConn.send({ type: 'action', target: wwr.selectedTarget }); if(!wwrActedPlayers.includes(wwr.peerId)) wwrActedPlayers.push(wwr.peerId); } wwr.selectedTarget = null; };
-
-                // ==========================================
-                //  3. リバーシ
-                // ==========================================
-                const rev = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(64).fill(null), turn: 'black', myColor: '', passMessage: '', winner: '', playerBlackName: '', playerWhiteName: '' });
-                let revPeer = null; const revConnections = {}; let revHostConn = null;
-                const revScore = computed(() => { let b = 0, w = 0; rev.board.forEach(c => { if(c==='black') b++; else if(c==='white') w++; }); return { black: b, white: w }; });
-                const revCreateRoom = () => { rev.myName = globalName.value; const id = generatePrefixedId('R'); revPeer = new Peer(id); revPeer.on('open', (id) => { rev.peerId = id; rev.roomId = id; rev.isHost = true; rev.screen = 'lobby'; rev.players.push({ id: id, name: rev.myName, isHost: true }); }); revPeer.on('connection', (conn) => { revConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && rev.players.length < 2) { rev.players.push({ id: conn.peer, name: data.name }); broadcastMap['reversi'](); } else if (data.type === 'move') { revExecuteMove(data.index, data.color); } }); conn.on('close', () => { rev.players = rev.players.filter(p => p.id !== conn.peer); delete revConnections[conn.peer]; broadcastMap['reversi'](); }); }); };
-                const revJoinRoom = () => { revPeer = new Peer(); revPeer.on('open', (id) => { rev.peerId = id; revHostConn = revPeer.connect(rev.inputRoomId); revHostConn.on('open', () => { rev.roomId = rev.inputRoomId; revHostConn.send({ type: 'join', name: globalName.value }); rev.screen = 'lobby'; }); revHostConn.on('data', (data) => { if (data.type === 'joined') { rev.players = data.players; } else if (data.type === 'start') { rev.myColor = data.color; rev.playerBlackName = data.blackName; rev.playerWhiteName = data.whiteName; rev.board = data.board; rev.turn = 'black'; rev.screen = 'game'; rev.passMessage = ''; } else if (data.type === 'update') { rev.board = data.board; rev.turn = data.turn; rev.passMessage = data.passMsg || ''; if(data.isEnd) { rev.winner = data.winner; rev.screen = 'result'; } } else if (data.type === 'back_to_lobby') { rev.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const revStartGame = () => { rev.board = Array(64).fill(null); rev.board[27] = 'white'; rev.board[28] = 'black'; rev.board[35] = 'black'; rev.board[36] = 'white'; rev.turn = 'black'; rev.passMessage = ''; const isHostBlack = Math.random() > 0.5; const guestId = rev.players.find(p => p.id !== rev.peerId).id; rev.myColor = isHostBlack ? 'black' : 'white'; rev.playerBlackName = isHostBlack ? rev.myName : rev.players[1].name; rev.playerWhiteName = isHostBlack ? rev.players[1].name : rev.myName; if (revConnections[guestId]) { revConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: rev.board, blackName: rev.playerBlackName, whiteName: rev.playerWhiteName }); } rev.screen = 'game'; };
-                const revGetFlippable = (index, color, boardState) => { if (boardState[index] !== null) return []; const directions = [-9, -8, -7, -1, 1, 7, 8, 9]; const oppColor = color === 'black' ? 'white' : 'black'; let flippable = []; directions.forEach(dir => { let curr = index + dir; let temp = []; while (curr >= 0 && curr < 64 && !(dir === 1 && curr % 8 === 0) && !(dir === -1 && curr % 8 === 7) && !(dir === 9 && curr % 8 === 0) && !(dir === -9 && curr % 8 === 7) && !(dir === 7 && curr % 8 === 7) && !(dir === -7 && curr % 8 === 0)) { if (boardState[curr] === oppColor) { temp.push(curr); } else if (boardState[curr] === color) { flippable.push(...temp); break; } else { break; } curr += dir; } }); return flippable; };
-                const revIsValidMove = (index, color) => revGetFlippable(index, color, rev.board).length > 0;
-                const revHasValidMove = (color) => rev.board.some((_, i) => revIsValidMove(i, color));
-                const revPlaceDisc = (index) => { if (rev.turn !== rev.myColor) return; if (rev.isHost) revExecuteMove(index, rev.myColor); else revHostConn.send({ type: 'move', index: index, color: rev.myColor }); };
-                const revExecuteMove = (index, color) => { const flips = revGetFlippable(index, color, rev.board); if (flips.length === 0) return; rev.board[index] = color; flips.forEach(i => rev.board[i] = color); let nextTurn = color === 'black' ? 'white' : 'black'; let passMsg = ''; let isEnd = false; let winner = ''; if (!revHasValidMove(nextTurn)) { passMsg = `${nextTurn === 'black' ? '黒' : '白'}は置ける場所がないためパスです`; nextTurn = color; if (!revHasValidMove(nextTurn)) { isEnd = true; passMsg = '両者置けないためゲーム終了です'; } } if (rev.board.filter(c => c === null).length === 0) isEnd = true; if (isEnd) { const s = revScore.value; if (s.black > s.white) winner = 'black'; else if (s.white > s.black) winner = 'white'; else winner = 'draw'; rev.winner = winner; rev.screen = 'result'; } rev.turn = nextTurn; rev.passMessage = passMsg; Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: rev.board, turn: rev.turn, passMsg: passMsg, isEnd: isEnd, winner: winner }); }); };
-                const revBackToLobby = () => { rev.screen = 'lobby'; Object.values(revConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
-                // ==========================================
-                //  4. チェス
-                // ==========================================
-                const chs = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(64).fill(null), turn: 'w', myColor: '', playerWhiteName: '', playerBlackName: '', selectedIndex: null, validMoves: [], winner: '' });
-                let chsPeer = null; const chsConnections = {}; let chsHostConn = null;
-                const chsInitialBoard = [ 'bR','bN','bB','bQ','bK','bB','bN','bR', 'bP','bP','bP','bP','bP','bP','bP','bP', null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, null,null,null,null,null,null,null,null, 'wP','wP','wP','wP','wP','wP','wP','wP', 'wR','wN','wB','wQ','wK','wB','wN','wR' ];
-                const chsGetPieceChar = (piece) => { const chars = { 'wK':'♔', 'wQ':'♕', 'wR':'♖', 'wB':'♗', 'wN':'♘', 'wP':'♙', 'bK':'♚', 'bQ':'♛', 'bR':'♜', 'bB':'♝', 'bN':'♞', 'bP':'♟' }; return chars[piece] || ''; };
-                const chsCreateRoom = () => { chs.myName = globalName.value; const id = generatePrefixedId('C'); chsPeer = new Peer(id); chsPeer.on('open', (id) => { chs.peerId = id; chs.roomId = id; chs.isHost = true; chs.screen = 'lobby'; chs.players.push({ id: id, name: chs.myName, isHost: true }); }); chsPeer.on('connection', (conn) => { chsConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && chs.players.length < 2) { chs.players.push({ id: conn.peer, name: data.name }); broadcastMap['chess'](); } else if (data.type === 'move') { chsExecuteMove(data.from, data.to); } }); conn.on('close', () => { chs.players = chs.players.filter(p => p.id !== conn.peer); delete chsConnections[conn.peer]; broadcastMap['chess'](); }); }); };
-                const chsJoinRoom = () => { chsPeer = new Peer(); chsPeer.on('open', (id) => { chs.peerId = id; chsHostConn = chsPeer.connect(chs.inputRoomId); chsHostConn.on('open', () => { chs.roomId = chs.inputRoomId; chsHostConn.send({ type: 'join', name: globalName.value }); chs.screen = 'lobby'; }); chsHostConn.on('data', (data) => { if (data.type === 'joined') { chs.players = data.players; } else if (data.type === 'start') { chs.myColor = data.color; chs.playerWhiteName = data.whiteName; chs.playerBlackName = data.blackName; chs.board = data.board; chs.turn = 'w'; chs.screen = 'game'; } else if (data.type === 'update') { chs.board = data.board; chs.turn = data.turn; if(data.isEnd) { chs.winner = data.winner; chs.screen = 'result'; } } else if (data.type === 'back_to_lobby') { chs.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const chsStartGame = () => { chs.board = [...chsInitialBoard]; chs.turn = 'w'; const isHostWhite = Math.random() > 0.5; const guestId = chs.players.find(p => p.id !== chs.peerId).id; chs.myColor = isHostWhite ? 'w' : 'b'; chs.playerWhiteName = isHostWhite ? chs.myName : chs.players[1].name; chs.playerBlackName = isHostWhite ? chs.players[1].name : chs.myName; if (chsConnections[guestId]) chsConnections[guestId].send({ type: 'start', color: isHostWhite ? 'b' : 'w', board: chs.board, whiteName: chs.playerWhiteName, blackName: chs.playerBlackName }); chs.screen = 'game'; };
-                const chsGetValidMoves = (index, board) => { const piece = board[index]; if (!piece) return []; const color = piece[0]; const type = piece[1]; const row = Math.floor(index / 8); const col = index % 8; const moves = []; const addIfValid = (r, c) => { if(r<0||r>7||c<0||c>7) return false; const target = board[r*8+c]; if(!target) { moves.push(r*8+c); return true; } if(target[0] !== color) { moves.push(r*8+c); } return false; }; const slide = (dirs) => { dirs.forEach(([dr, dc]) => { let r = row + dr, c = col + dc; while(r>=0&&r<=7&&c>=0&&c<=7) { if(!addIfValid(r,c)) break; if(board[r*8+c]) break; r += dr; c += dc; } }); }; if(type === 'P') { const dir = color === 'w' ? -1 : 1; if(row+dir>=0 && row+dir<=7 && !board[(row+dir)*8+col]) { moves.push((row+dir)*8+col); if((color === 'w' && row === 6) || (color === 'b' && row === 1)) { if(!board[(row+dir*2)*8+col]) moves.push((row+dir*2)*8+col); } } if(col>0 && board[(row+dir)*8+(col-1)] && board[(row+dir)*8+(col-1)][0] !== color && board[(row+dir)*8+(col-1)]) moves.push((row+dir)*8+(col-1)); if(col<7 && board[(row+dir)*8+(col+1)] && board[(row+dir)*8+(col+1)][0] !== color && board[(row+dir)*8+(col+1)]) moves.push((row+dir)*8+(col+1)); } else if(type === 'N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); } else if(type === 'B') { slide([[-1,-1],[-1,1],[1,-1],[1,1]]); } else if(type === 'R') { slide([[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'Q') { slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]); } else if(type === 'K') { [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => addIfValid(row+dr, col+dc)); } return moves; };
-                const chsClickCell = (index) => { if(chs.turn !== chs.myColor) return; if(chs.validMoves.includes(index)) { if(chs.isHost) chsExecuteMove(chs.selectedIndex, index); else chsHostConn.send({ type: 'move', from: chs.selectedIndex, to: index }); chs.selectedIndex = null; chs.validMoves = []; } else if (chs.board[index] && chs.board[index][0] === chs.myColor) { chs.selectedIndex = index; chs.validMoves = chsGetValidMoves(index, chs.board); } else { chs.selectedIndex = null; chs.validMoves = []; } };
-                const chsExecuteMove = (from, to) => { const piece = chs.board[from]; const targetPiece = chs.board[to]; let newPiece = piece; if (piece[1] === 'P' && (Math.floor(to / 8) === 0 || Math.floor(to / 8) === 7)) { newPiece = piece[0] + 'Q'; } chs.board[to] = newPiece; chs.board[from] = null; let isEnd = false; let winner = ''; if (targetPiece && targetPiece[1] === 'K') { isEnd = true; winner = chs.turn; } chs.turn = chs.turn === 'w' ? 'b' : 'w'; if (isEnd) { chs.winner = winner; chs.screen = 'result'; } Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: chs.board, turn: chs.turn, isEnd: isEnd, winner: winner }); }); };
-                const chsBackToLobby = () => { chs.screen = 'lobby'; Object.values(chsConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
-                // ==========================================
-                //  5. 五目並べ
-                // ==========================================
-                const gom = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], board: Array(225).fill(null), turn: 'black', myColor: '', winner: '', playerBlackName: '', playerWhiteName: '' });
-                let gomPeer = null; const gomConnections = {}; let gomHostConn = null;
-                const gomCreateRoom = () => { gom.myName = globalName.value; const id = generatePrefixedId('G'); gomPeer = new Peer(id); gomPeer.on('open', (id) => { gom.peerId = id; gom.roomId = id; gom.isHost = true; gom.screen = 'lobby'; gom.players.push({ id: id, name: gom.myName, isHost: true }); }); gomPeer.on('connection', (conn) => { gomConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join' && gom.players.length < 2) { gom.players.push({ id: conn.peer, name: data.name }); broadcastMap['gomoku'](); } else if (data.type === 'move') { gomExecuteMove(data.index, data.color); } }); conn.on('close', () => { gom.players = gom.players.filter(p => p.id !== conn.peer); delete gomConnections[conn.peer]; broadcastMap['gomoku'](); }); }); };
-                const gomJoinRoom = () => { gomPeer = new Peer(); gomPeer.on('open', (id) => { gom.peerId = id; gomHostConn = gomPeer.connect(gom.inputRoomId); gomHostConn.on('open', () => { gom.roomId = gom.inputRoomId; gomHostConn.send({ type: 'join', name: globalName.value }); gom.screen = 'lobby'; }); gomHostConn.on('data', (data) => { if (data.type === 'joined') { gom.players = data.players; } else if (data.type === 'start') { gom.myColor = data.color; gom.playerBlackName = data.blackName; gom.playerWhiteName = data.whiteName; gom.board = data.board; gom.turn = 'black'; gom.screen = 'game'; } else if (data.type === 'update') { gom.board = data.board; gom.turn = data.turn; if(data.isEnd) { gom.winner = data.winner; gom.screen = 'result'; } } else if (data.type === 'back_to_lobby') { gom.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const gomStartGame = () => { gom.board = Array(225).fill(null); gom.turn = 'black'; const isHostBlack = Math.random() > 0.5; const guestId = gom.players.find(p => p.id !== gom.peerId).id; gom.myColor = isHostBlack ? 'black' : 'white'; gom.playerBlackName = isHostBlack ? gom.myName : gom.players[1].name; gom.playerWhiteName = isHostBlack ? gom.players[1].name : gom.myName; if (gomConnections[guestId]) gomConnections[guestId].send({ type: 'start', color: isHostBlack ? 'white' : 'black', board: gom.board, blackName: gom.playerBlackName, whiteName: gom.playerWhiteName }); gom.screen = 'game'; };
-                const gomCheckWin = (index, color) => { const r = Math.floor(index/15); const c = index%15; const dirs = [[1,0],[0,1],[1,1],[1,-1]]; for(let [dr,dc] of dirs) { let count = 1; for(let i=1; i<=4; i++) { let nr = r+dr*i, nc = c+dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; } for(let i=1; i<=4; i++) { let nr = r-dr*i, nc = c-dc*i; if(nr>=0&&nr<15&&nc>=0&&nc<15&&gom.board[nr*15+nc]===color) count++; else break; } if(count >= 5) return true; } return false; };
-                const gomPlaceStone = (index) => { if(gom.turn !== gom.myColor || gom.board[index] !== null) return; if(gom.isHost) gomExecuteMove(index, gom.myColor); else gomHostConn.send({ type: 'move', index: index, color: gom.myColor }); };
-                const gomExecuteMove = (index, color) => { gom.board[index] = color; let isEnd = false; let winner = ''; if(gomCheckWin(index, color)) { isEnd = true; winner = color; } gom.turn = color === 'black' ? 'white' : 'black'; if (isEnd) { gom.winner = winner; gom.screen = 'result'; } Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'update', board: gom.board, turn: gom.turn, isEnd: isEnd, winner: winner }); }); };
-                const gomBackToLobby = () => { gom.screen = 'lobby'; Object.values(gomConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
-                // ==========================================
-                //  6. お絵かき伝言ゲーム
-                // ==========================================
-                const drw = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], turn: 0, totalTurns: 0, myInputTheme: '', myInputGuess: '', hasSubmitted: false, currentTaskText: '', currentTaskImage: '', albums: [], currentAlbumIndex: 0, penColor: '#000000', penWidth: 5, isDrawing: false });
-                let drwPeer = null; const drwConnections = {}; let drwHostConn = null; let drwMasterData = []; let drwPlayerOrder = [];
-                const drwCreateRoom = () => { drw.myName = globalName.value; const id = generatePrefixedId('D'); drwPeer = new Peer(id); drwPeer.on('open', (id) => { drw.peerId = id; drw.roomId = id; drw.isHost = true; drw.screen = 'lobby'; drw.players.push({ id: id, name: drw.myName, isHost: true }); }); drwPeer.on('connection', (conn) => { drwConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { drw.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['draw'](); } else if (data.type === 'submit_theme') { drwHandleSubmission(conn.peer, 'theme', data.theme); } else if (data.type === 'submit_draw') { drwHandleSubmission(conn.peer, 'draw', data.image); } else if (data.type === 'submit_guess') { drwHandleSubmission(conn.peer, 'guess', data.guess); } }); conn.on('close', () => { drw.players = drw.players.filter(p => p.id !== conn.peer); delete drwConnections[conn.peer]; broadcastMap['draw'](); }); }); };
-                const drwJoinRoom = () => { drwPeer = new Peer(); drwPeer.on('open', (id) => { drw.peerId = id; drwHostConn = drwPeer.connect(drw.inputRoomId); drwHostConn.on('open', () => { drw.roomId = drw.inputRoomId; drwHostConn.send({ type: 'join', name: globalName.value }); drw.screen = 'lobby'; }); drwHostConn.on('data', (data) => { if (data.type === 'players') { drw.players = data.players; } else if (data.type === 'start') { drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = ''; } else if (data.type === 'next_turn') { drw.hasSubmitted = false; if (data.taskType === 'draw') { drw.currentTaskText = data.taskData; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); } else if (data.taskType === 'guess') { drw.currentTaskImage = data.taskData; drw.myInputGuess = ''; drw.screen = 'guess_turn'; } } else if (data.type === 'result') { drw.albums = data.albums; drw.currentAlbumIndex = 0; drw.screen = 'result'; } else if (data.type === 'back_to_lobby') { drw.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const drwStartGame = () => { drwPlayerOrder = drw.players.map(p => p.id).sort(() => Math.random() - 0.5); drw.totalTurns = drw.players.length; drw.turn = 1; drwMasterData = drwPlayerOrder.map(() => ({ history: [] })); drw.screen = 'write_theme'; drw.hasSubmitted = false; drw.myInputTheme = ''; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'start' }); }); };
-                let drwSubmissions = 0;
-                const drwHandleSubmission = (playerId, type, data) => { const playerIndex = drwPlayerOrder.indexOf(playerId); const albumIndex = (playerIndex + drw.turn - 1) % drw.players.length; const playerName = drw.players.find(p=>p.id===playerId).name; drwMasterData[albumIndex].history.push({ type: type, data: data, playerId: playerId, playerName: playerName }); drwSubmissions++; if (drwSubmissions >= drw.players.length) { drwSubmissions = 0; drw.turn++; if (drw.turn > drw.totalTurns) { drw.albums = drwMasterData; drw.currentAlbumIndex = 0; drw.screen = 'result'; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'result', albums: drwMasterData }); }); } else { const isDrawTurn = drw.turn % 2 === 0; drwPlayerOrder.forEach((pid, idx) => { const targetAlbumIndex = (idx + drw.turn - 1) % drw.players.length; const prevStep = drwMasterData[targetAlbumIndex].history[drwMasterData[targetAlbumIndex].history.length - 1]; const msg = { type: 'next_turn', taskType: isDrawTurn ? 'draw' : 'guess', taskData: prevStep.data }; if (pid === drw.peerId) { drw.hasSubmitted = false; if (isDrawTurn) { drw.currentTaskText = prevStep.data; drw.screen = 'draw_turn'; nextTick(drwInitCanvas); } else { drw.currentTaskImage = prevStep.data; drw.myInputGuess = ''; drw.screen = 'guess_turn'; } } else { if (drwConnections[pid]) drwConnections[pid].send(msg); } }); } } };
-                const drwSubmitTheme = () => { drw.hasSubmitted = true; if(drw.isHost) drwHandleSubmission(drw.peerId, 'theme', drw.myInputTheme); else drwHostConn.send({ type: 'submit_theme', theme: drw.myInputTheme }); };
-                const drwSubmitGuess = () => { drw.hasSubmitted = true; if(drw.isHost) drwHandleSubmission(drw.peerId, 'guess', drw.myInputGuess); else drwHostConn.send({ type: 'submit_guess', guess: drw.myInputGuess }); };
-                const drwSubmitDrawing = () => { drw.hasSubmitted = true; const canvas = document.getElementById('draw-canvas'); const tempCanvas = document.createElement('canvas'); tempCanvas.width = canvas.width; tempCanvas.height = canvas.height; const ctx = tempCanvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,tempCanvas.width,tempCanvas.height); ctx.drawImage(canvas,0,0); const imgData = tempCanvas.toDataURL('image/jpeg', 0.8); if(drw.isHost) drwHandleSubmission(drw.peerId, 'draw', imgData); else drwHostConn.send({ type: 'submit_draw', image: imgData }); };
-                let ctx = null; let lastX = 0; let lastY = 0;
-                const drwInitCanvas = () => { const canvas = document.getElementById('draw-canvas'); if (!canvas) return; const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; ctx = canvas.getContext('2d'); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); };
-                const drwGetPos = (e) => { const canvas = document.getElementById('draw-canvas'); const rect = canvas.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0].clientX); const clientY = e.clientY || (e.touches && e.touches[0].clientY); return [clientX - rect.left, clientY - rect.top]; };
-                const drwStartDraw = (e) => { drw.isDrawing = true; [lastX, lastY] = drwGetPos(e); }; const drwStartDrawTouch = (e) => { e.preventDefault(); drwStartDraw(e); };
-                const drwDraw = (e) => { if (!drw.isDrawing || !ctx) return; const [x, y] = drwGetPos(e); ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.strokeStyle = drw.penColor; ctx.lineWidth = drw.penWidth; ctx.stroke(); [lastX, lastY] = [x, y]; };
-                const drwDrawTouch = (e) => { e.preventDefault(); drwDraw(e); }; const drwEndDraw = () => { drw.isDrawing = false; };
-                const drwBackToLobby = () => { drw.screen = 'lobby'; Object.values(drwConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
-                // ==========================================
-                //  7. 💯 シンクロ・パーセント (NEW)
-                // ==========================================
-                const sncThemeList = [
-                    '1=弱い動物, 100=強い動物', '1=行きたくない場所, 100=行きたい場所', '1=安い, 100=高い (買い物の価値観)', 
-                    '1=まずい, 100=おいしい (給食のメニュー)', '1=無人島に持っていきたくない, 100=持っていきたい',
-                    '1=子供向け, 100=大人向け (アニメや映画)', '1=テンションが下がる, 100=テンションが上がる (日常の出来事)'
-                ];
-                const snc = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], myNumber: 0, currentTheme: '', resultData: [] });
-                let sncPeer = null; const sncConnections = {}; let sncHostConn = null;
-
-                const sncCreateRoom = () => { snc.myName = globalName.value; const id = generatePrefixedId('S'); sncPeer = new Peer(id); sncPeer.on('open', (id) => { snc.peerId = id; snc.roomId = id; snc.isHost = true; snc.screen = 'lobby'; snc.players.push({ id: id, name: snc.myName, isHost: true }); }); sncPeer.on('connection', (conn) => { sncConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { snc.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['synchro'](); } }); conn.on('close', () => { snc.players = snc.players.filter(p => p.id !== conn.peer); delete sncConnections[conn.peer]; broadcastMap['synchro'](); }); }); };
-                const sncJoinRoom = () => { sncPeer = new Peer(); sncPeer.on('open', (id) => { snc.peerId = id; sncHostConn = sncPeer.connect(snc.inputRoomId); sncHostConn.on('open', () => { snc.roomId = snc.inputRoomId; sncHostConn.send({ type: 'join', name: globalName.value }); snc.screen = 'lobby'; }); sncHostConn.on('data', (data) => { if (data.type === 'players') { snc.players = data.players; } else if (data.type === 'start') { snc.myNumber = data.myNumber; snc.currentTheme = data.theme; snc.screen = 'game'; } else if (data.type === 'result') { snc.resultData = data.resultData; snc.screen = 'result'; } else if (data.type === 'back_to_lobby') { snc.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const sncStartGame = () => {
-                    const theme = sncThemeList[Math.floor(Math.random() * sncThemeList.length)];
-                    let numbers = []; while(numbers.length < snc.players.length) { let r = Math.floor(Math.random() * 100) + 1; if(numbers.indexOf(r) === -1) numbers.push(r); }
-                    snc.currentTheme = theme; snc.resultData = [];
-                    snc.players.forEach((p, idx) => {
-                        snc.resultData.push({ id: p.id, name: p.name, number: numbers[idx] });
-                        if(p.id === snc.peerId) { snc.myNumber = numbers[idx]; } 
-                        else if (sncConnections[p.id]) { sncConnections[p.id].send({ type: 'start', myNumber: numbers[idx], theme: theme }); }
+                const createRoom = () => {
+                    initAudio();
+                    errorMsg.value = '';
+                    const id = 'BW-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                    peer = new Peer(id);
+                    peer.on('open', (i) => {
+                        peerId.value = i;
+                        roomId.value = i;
+                        isHost.value = true;
+                        screen.value = 'lobby';
+                        players.push({ id: i, name: myName.value, isHost: true, lives: 3 });
                     });
-                    snc.screen = 'game';
-                };
-                const sncEndGame = () => {
-                    snc.resultData.sort((a, b) => b.number - a.number); // 大きい順に並べる (画面では上から表示)
-                    Object.values(sncConnections).forEach(c => { if(c.open) c.send({ type: 'result', resultData: snc.resultData }); });
-                    snc.screen = 'result';
-                };
-                const sncBackToLobby = () => { snc.screen = 'lobby'; Object.values(sncConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
-
-                // ==========================================
-                //  8. 🃏 ブラインド・ナンバー (NEW)
-                // ==========================================
-                const bndDeck = [20, 15, 10, 10, 5, 5, 5, 4, 3, 2, 1, 0, -5, -10, 'x2', 'MAX->0'];
-                const bnd = reactive({ screen: 'home', errorMsg: '', myName: '', peerId: '', isHost: false, roomId: '', inputRoomId: '', players: [], visiblePlayers: [], resultData: [], trueTotal: 0 });
-                let bndPeer = null; const bndConnections = {}; let bndHostConn = null;
-
-                const bndCreateRoom = () => { bnd.myName = globalName.value; const id = generatePrefixedId('B'); bndPeer = new Peer(id); bndPeer.on('open', (id) => { bnd.peerId = id; bnd.roomId = id; bnd.isHost = true; bnd.screen = 'lobby'; bnd.players.push({ id: id, name: bnd.myName, isHost: true }); }); bndPeer.on('connection', (conn) => { bndConnections[conn.peer] = conn; conn.on('data', (data) => { if (data.type === 'join') { bnd.players.push({ id: conn.peer, name: data.name, isHost: false }); broadcastMap['blind'](); } }); conn.on('close', () => { bnd.players = bnd.players.filter(p => p.id !== conn.peer); delete bndConnections[conn.peer]; broadcastMap['blind'](); }); }); };
-                const bndJoinRoom = () => { bndPeer = new Peer(); bndPeer.on('open', (id) => { bnd.peerId = id; bndHostConn = bndPeer.connect(bnd.inputRoomId); bndHostConn.on('open', () => { bnd.roomId = bnd.inputRoomId; bndHostConn.send({ type: 'join', name: globalName.value }); bnd.screen = 'lobby'; }); bndHostConn.on('data', (data) => { if (data.type === 'players') { bnd.players = data.players; } else if (data.type === 'start') { bnd.visiblePlayers = data.visiblePlayers; bnd.screen = 'game'; } else if (data.type === 'result') { bnd.resultData = data.resultData; bnd.trueTotal = data.trueTotal; bnd.screen = 'result'; } else if (data.type === 'back_to_lobby') { bnd.screen = 'lobby'; } else if (data.type === 'kicked') handleKicked(); }); }); };
-                const bndStartGame = () => {
-                    let shuffledDeck = [...bndDeck].sort(() => 0.5 - Math.random());
-                    let assignments = bnd.players.map((p, idx) => ({ id: p.id, name: p.name, card: shuffledDeck[idx] }));
-                    bnd.players.forEach(p => {
-                        let visible = assignments.map(a => ({ id: a.id, name: a.name, card: a.id === p.id ? '?' : a.card }));
-                        if(p.id === bnd.peerId) { bnd.visiblePlayers = visible; }
-                        else if (bndConnections[p.id]) { bndConnections[p.id].send({ type: 'start', visiblePlayers: visible }); }
+                    peer.on('connection', (conn) => {
+                        connections[conn.peer] = conn;
+                        conn.on('data', (data) => handleHostData(conn.peer, data));
+                        conn.on('close', () => {
+                            const idx = players.findIndex(p => p.id === conn.peer);
+                            if (idx !== -1) players.splice(idx, 1);
+                            delete connections[conn.peer];
+                            broadcast({ type: 'players', players: players });
+                        });
                     });
-                    bnd.resultData = assignments;
+                    peer.on('error', () => errorMsg.value = '通信エラーが発生しました。');
+                };
+
+                const broadcast = (data) => {
+                    Object.values(connections).forEach(c => { if(c.open) c.send(data); });
+                };
+
+                const kickPlayer = (targetId) => {
+                    if (!confirm('このプレイヤーをキックしますか？')) return;
+                    if (connections[targetId]) {
+                        connections[targetId].send({ type: 'kicked' });
+                        setTimeout(() => { connections[targetId].close(); delete connections[targetId]; }, 300);
+                    }
+                    const idx = players.findIndex(p => p.id === targetId);
+                    if (idx !== -1) players.splice(idx, 1);
+                    broadcast({ type: 'players', players: players });
+                };
+
+                const handleHostData = (senderId, data) => {
+                    if (data.type === 'join') {
+                        players.push({ id: senderId, name: data.name, isHost: false, lives: 3 });
+                        broadcast({ type: 'players', players: players });
+                    } else if (data.type === 'pass_word') {
+                        // 言葉のパス受付
+                        executePassWord(data.word);
+                    }
+                };
+
+                const startGame = () => {
+                    initAudio();
+                    players.forEach(p => p.lives = 3);
+                    usedWords.splice(0, usedWords.length);
+                    winnerName.value = '';
+                    screen.value = 'game';
+                    startNewRound();
+                };
+
+                const startNewRound = () => {
+                    // 生存者の中からランダムで爆弾所持者を決定
+                    const alivePlayers = players.filter(p => p.lives > 0);
+                    if (alivePlayers.length <= 1) {
+                        endGame(alivePlayers[0]?.name || '勝者なし');
+                        return;
+                    }
+
+                    const nextHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+                    currentHolderId.value = nextHolder.id;
+                    currentTheme.value = getRandomTheme();
+                    isExploding.value = false;
+
+                    broadcastState();
+
+                    // ランダムタイマーをセット (20〜35秒で爆発)
+                    clearTimeout(bombTimer);
+                    const bombDuration = (Math.floor(Math.random() * 15) + 20) * 1000;
+                    bombTimer = setTimeout(() => {
+                        triggerExplosion();
+                    }, bombDuration);
+                };
+
+                // 言葉がパスされた時の共通処理
+                const executePassWord = (word) => {
+                    usedWords.push(word);
+                    playPassSound();
+
+                    // 次の生存プレイヤーを探してパス
+                    const alivePlayers = players.filter(p => p.lives > 0);
+                    const currentIdx = alivePlayers.findIndex(p => p.id === currentHolderId.value);
+                    const nextIdx = (currentIdx + 1) % alivePlayers.length;
                     
-                    // 合計値計算ロジック
-                    let numCards = []; let maxVal = -999; let hasX2 = false; let hasMaxTo0 = false;
-                    assignments.forEach(a => { if(typeof a.card === 'number') { numCards.push(a.card); if(a.card > maxVal) maxVal = a.card; } else if(a.card === 'x2') hasX2 = true; else if(a.card === 'MAX->0') hasMaxTo0 = true; });
-                    if(hasMaxTo0 && maxVal !== -999) { numCards[numCards.indexOf(maxVal)] = 0; }
-                    let total = numCards.reduce((sum, val) => sum + val, 0);
-                    if(hasX2) total *= 2;
-                    bnd.trueTotal = total;
-                    bnd.screen = 'game';
-                };
-                const bndEndGame = () => { Object.values(bndConnections).forEach(c => { if(c.open) c.send({ type: 'result', resultData: bnd.resultData, trueTotal: bnd.trueTotal }); }); bnd.screen = 'result'; };
-                const bndBackToLobby = () => { bnd.screen = 'lobby'; Object.values(bndConnections).forEach(c => { if(c.open) c.send({ type: 'back_to_lobby' }); }); };
+                    currentHolderId.value = alivePlayers[nextIdx].id;
+                    currentTheme.value = getRandomTheme(); // 新しいお題
 
+                    broadcastState();
+                };
+
+                // 爆発処理
+                const triggerExplosion = () => {
+                    clearTimeout(bombTimer);
+                    isExploding.value = true;
+                    playExplosionSound();
+
+                    // 爆発した人のライフを減らす
+                    const victim = players.find(p => p.id === currentHolderId.value);
+                    if (victim) victim.lives--;
+
+                    broadcastState();
+
+                    // 3秒後に生存判定・次ラウンドへ
+                    setTimeout(() => {
+                        const alivePlayers = players.filter(p => p.lives > 0);
+                        if (alivePlayers.length <= 1) {
+                            endGame(alivePlayers[0]?.name || '勝者なし');
+                        } else {
+                            startNewRound();
+                        }
+                    }, 3000);
+                };
+
+                const broadcastState = () => {
+                    const state = {
+                        type: 'state',
+                        players: players,
+                        currentHolderId: currentHolderId.value,
+                        currentTheme: currentTheme.value,
+                        usedWords: usedWords,
+                        isExploding: isExploding.value
+                    };
+                    broadcast(state);
+                };
+
+                const endGame = (winner) => {
+                    winnerName.value = winner;
+                    screen.value = 'result';
+                    broadcast({ type: 'game_over', winner: winner });
+                };
+
+                const backToLobby = () => {
+                    screen.value = 'lobby';
+                    broadcast({ type: 'back_to_lobby' });
+                };
+
+                // ==========================================
+                // ゲスト処理
+                // ==========================================
+                const joinRoom = () => {
+                    initAudio();
+                    errorMsg.value = '';
+                    peer = new Peer();
+                    peer.on('open', (id) => {
+                        peerId.value = id;
+                        const targetId = inputRoomId.value.trim().toUpperCase();
+                        hostConn = peer.connect(targetId);
+                        hostConn.on('open', () => {
+                            roomId.value = targetId;
+                            hostConn.send({ type: 'join', name: myName.value });
+                            screen.value = 'lobby';
+                        });
+                        hostConn.on('data', (data) => {
+                            if (data.type === 'players') {
+                                players.splice(0, players.length, ...data.players);
+                            } else if (data.type === 'state') {
+                                const prevHolder = currentHolderId.value;
+                                players.splice(0, players.length, ...data.players);
+                                currentHolderId.value = data.currentHolderId;
+                                currentTheme.value = data.currentTheme;
+                                usedWords.splice(0, usedWords.length, ...data.usedWords);
+                                
+                                if (!isExploding.value && data.isExploding) {
+                                    playExplosionSound();
+                                } else if (prevHolder !== data.currentHolderId) {
+                                    playPassSound();
+                                }
+                                isExploding.value = data.isExploding;
+                                screen.value = 'game';
+                            } else if (data.type === 'game_over') {
+                                winnerName.value = data.winner;
+                                screen.value = 'result';
+                            } else if (data.type === 'back_to_lobby') {
+                                screen.value = 'lobby';
+                            } else if (data.type === 'kicked') {
+                                alert('ホストによってキックされました。');
+                                location.reload();
+                            }
+                        });
+                        hostConn.on('close', () => {
+                            errorMsg.value = 'ホストとの接続が切れました。';
+                            screen.value = 'home';
+                        });
+                    });
+                    peer.on('error', () => errorMsg.value = 'ルームが見つかりません。');
+                };
+
+                // 単語の送信
+                const submitWord = () => {
+                    inputError.value = '';
+                    const word = inputWord.value.trim();
+                    if (!word) return;
+
+                    // 重複チェック
+                    if (usedWords.includes(word)) {
+                        inputError.value = 'すでに使われた言葉です！';
+                        return;
+                    }
+
+                    if (isHost.value) {
+                        executePassWord(word);
+                    } else {
+                        hostConn.send({ type: 'pass_word', word: word });
+                    }
+                    inputWord.value = '';
+                };
+
+                // 手元に爆弾がある間、チクタク音を鳴らす
+                setInterval(() => {
+                    if (screen.value === 'game' && !isExploding.value) {
+                        playTickSound(isMyTurn.value);
+                    }
+                }, 800);
 
                 return {
-                    currentTab, switchTab, isNightMode, toggleNightMode, isGameStarted,
-                    isStreamerMode, displayRoomId, kickPlayer,
-                    globalName, globalInputRoomId, globalErrorMsg, smartJoinRoom, copyText,
-                    
-                    ww, wwCreateRoom, wwJoinRoom, wwStartGame, wwEndGame, wwBackToLobby,
-                    wwr, wwrCreateRoom, wwrJoinRoom, wwrStartGame, wwrNextPhase, wwrBackToLobby, wwrSubmitAction,
-                    rev, revScore, revCreateRoom, revJoinRoom, revStartGame, revPlaceDisc, revIsValidMove, revBackToLobby,
-                    chs, chsGetPieceChar, chsCreateRoom, chsJoinRoom, chsStartGame, chsClickCell, chsBackToLobby,
-                    gom, gomCreateRoom, gomJoinRoom, gomStartGame, gomPlaceStone, gomBackToLobby,
-                    drw, drwCreateRoom, drwJoinRoom, drwStartGame, drwSubmitTheme, drwSubmitGuess, drwSubmitDrawing, drwStartDraw, drwDraw, drwEndDraw, drwStartDrawTouch, drwDrawTouch, drwBackToLobby,
-                    snc, sncCreateRoom, sncJoinRoom, sncStartGame, sncEndGame, sncBackToLobby,
-                    bnd, bndCreateRoom, bndJoinRoom, bndStartGame, bndEndGame, bndBackToLobby
+                    screen, errorMsg, inputError, isNightMode, isStreamerMode, toggleNightMode,
+                    myName, peerId, isHost, roomId, inputRoomId, players,
+                    currentHolderId, currentHolder, currentTheme, inputWord, usedWords, isExploding, winnerName, isMyTurn,
+                    createRoom, joinRoom, copyRoomId, displayRoomId, kickPlayer, startGame, submitWord, backToLobby
                 };
             }
         }).mount('#app');
