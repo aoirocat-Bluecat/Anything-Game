@@ -3,230 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ボム・ワード (BOMB WORD)</title>
-    <!-- Tailwind CSS -->
+    <title>総合パーティゲーム・ハブ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
-    <!-- Vue 3 -->
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
-    
     <style>
-        /* 爆弾のドクドクアニメーション */
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-            100% { transform: scale(1); }
-        }
-        .bomb-pulse {
-            animation: heartbeat 0.6s infinite ease-in-out;
-        }
-        .bomb-panic {
-            animation: heartbeat 0.25s infinite ease-in-out;
-        }
-
-        /* トグルスイッチ */
+        @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        .bomb-pulse { animation: heartbeat 0.6s infinite ease-in-out; }
+        .bomb-panic { animation: heartbeat 0.25s infinite ease-in-out; }
         .toggle-checkbox:checked { right: 0; border-color: #ef4444; }
         .toggle-checkbox:checked + .toggle-label { background-color: #ef4444; }
-
-        html, body { min-height: 100vh; margin: 0; padding: 0; }
+        body { min-height: 100vh; margin: 0; }
     </style>
 </head>
 <body class="font-sans transition-colors duration-1000 bg-slate-100 dark:bg-slate-900 text-gray-800 dark:text-gray-200 select-none">
     
     <div id="app" class="w-full max-w-xl mx-auto flex flex-col items-center justify-center p-3 sm:p-4 min-h-screen relative">
         
-        <!-- 上部バー (配信者モード設定) -->
+        <!-- ヘッダー設定 -->
         <div class="w-full flex justify-end mb-2 gap-3">
-            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-slate-700 transition-colors">
-                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">📹 配信者モード</span>
-                <div class="relative inline-block w-10 mr-1 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" v-model="isStreamerMode" name="toggle" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white dark:bg-slate-200 border-4 appearance-none cursor-pointer z-10 transition-all duration-300" style="top: 2px; left: 2px;"/>
-                    <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-slate-700">
+                <span class="text-xs font-bold">📹 配信モード</span>
+                <div class="relative inline-block w-10 mr-1 align-middle select-none">
+                    <input type="checkbox" v-model="isStreamerMode" id="toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white dark:bg-slate-200 border-4 appearance-none cursor-pointer z-10 transition-all duration-300" style="top: 2px; left: 2px;"/>
+                    <label for="toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-slate-600 cursor-pointer"></label>
                 </div>
             </div>
+            <button @click="toggleNightMode" class="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full shadow-sm border border-gray-200 dark:border-slate-700 text-lg hover:scale-110 transition">
+                {{ isNightMode ? '☀️' : '🌙' }}
+            </button>
         </div>
 
-        <div class="w-full bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-700 transition-colors duration-500">
-            
-            <!-- ヘッダー -->
-            <div class="bg-rose-600 dark:bg-rose-900 text-white p-4 text-center relative transition-colors duration-500">
+        <div class="w-full bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-700">
+            <div class="bg-indigo-600 dark:bg-indigo-900 text-white p-4 text-center">
                 <h1 class="text-2xl sm:text-3xl font-black tracking-widest flex items-center justify-center gap-2">
-                    <span>💣</span> ボム・ワード
+                    <span>🎮</span> PARTY HUB
                 </h1>
-                <button @click="toggleNightMode" class="absolute right-4 top-1/2 -translate-y-1/2 text-2xl hover:scale-110 transition-transform" :title="isNightMode ? 'ライトモード' : 'ナイトモード'">
-                    {{ isNightMode ? '☀️' : '🌙' }}
-                </button>
             </div>
 
             <div class="p-6 sm:p-8">
 
-                <!-- 画面1: ホーム画面 -->
+                <!-- ホーム画面 -->
                 <div v-if="screen === 'home'" class="space-y-6">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">あなたの名前</label>
-                        <input v-model="myName" type="text" class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-xl shadow-sm focus:ring-2 focus:ring-rose-500 outline-none transition" placeholder="（例）たろう">
+                        <label class="block text-sm font-bold mb-1">あなたの名前</label>
+                        <input v-model="myName" type="text" class="w-full px-4 py-3 border rounded-xl dark:bg-slate-700 dark:border-slate-600 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="（例）あおい">
                     </div>
-
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- 部屋作成 -->
-                        <div class="p-5 border-2 border-rose-100 dark:border-rose-950 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex flex-col justify-between transition">
-                            <div>
-                                <h3 class="text-lg font-bold text-rose-900 dark:text-rose-300 mb-1">部屋を作る</h3>
-                                <p class="text-xs text-rose-700 dark:text-rose-400 mb-4">ホストとして全員を招待します。</p>
-                            </div>
-                            <button @click="createRoom" :disabled="!myName" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl disabled:opacity-50 transition shadow-md">
-                                部屋を作成 (ホスト)
-                            </button>
+                        <div class="p-5 border-2 border-indigo-100 dark:border-indigo-900/50 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20">
+                            <h3 class="font-bold text-indigo-900 dark:text-indigo-300 mb-4">部屋を作る (ホスト)</h3>
+                            <button @click="createRoom" :disabled="!myName" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl disabled:opacity-50">作成</button>
                         </div>
-
-                        <!-- 部屋参加 -->
-                        <div class="p-5 border-2 border-emerald-100 dark:border-emerald-950 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex flex-col justify-between transition">
-                            <div>
-                                <h3 class="text-lg font-bold text-emerald-900 dark:text-emerald-300 mb-2">部屋に参加</h3>
-                                <input v-model="inputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-lg shadow-sm text-center font-mono uppercase tracking-widest text-sm mb-3 outline-none" placeholder="BW-xxxxxx">
-                            </div>
-                            <button @click="joinRoom" :disabled="!myName || !inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl disabled:opacity-50 transition shadow-md">
-                                参加する
-                            </button>
+                        <div class="p-5 border-2 border-emerald-100 dark:border-emerald-900/50 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20">
+                            <h3 class="font-bold text-emerald-900 dark:text-emerald-300 mb-2">部屋に参加</h3>
+                            <input v-model="inputRoomId" :type="isStreamerMode ? 'password' : 'text'" class="w-full px-3 py-2 border rounded-lg text-center font-mono mb-3 dark:bg-slate-700" placeholder="IDを入力">
+                            <button @click="joinRoom" :disabled="!myName || !inputRoomId" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl disabled:opacity-50">参加</button>
                         </div>
                     </div>
                     <p v-if="errorMsg" class="text-red-500 text-sm text-center font-bold">{{ errorMsg }}</p>
                 </div>
 
-                <!-- 画面2: ロビー画面 -->
+                <!-- ロビー画面 -->
                 <div v-if="screen === 'lobby'" class="space-y-6">
-                    <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-700/50 text-center shadow-inner transition">
-                        <p class="text-xs text-amber-800 dark:text-amber-300 font-bold mb-2">みんなにルームIDを教えてね！ (2人以上)</p>
-                        <div class="flex items-center justify-center gap-2">
-                            <code class="text-2xl sm:text-3xl font-mono font-black dark:text-white bg-white dark:bg-slate-700 px-4 py-2 rounded-xl border-2 border-amber-300 tracking-wider">
-                                {{ displayRoomId(roomId) }}
-                            </code>
-                            <button @click="copyRoomId" class="text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl transition">コピー</button>
-                        </div>
-                        <p v-if="isStreamerMode" class="text-[10px] text-rose-500 font-bold mt-2">※配信者モードON (画面上は伏字です)</p>
+                    <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-2xl text-center">
+                        <p class="text-xs font-bold mb-2 text-amber-800 dark:text-amber-300">ルームID</p>
+                        <code class="text-2xl font-mono font-black bg-white dark:bg-slate-700 px-4 py-2 rounded-xl border-2 border-amber-300">{{ displayRoomId(roomId) }}</code>
                     </div>
 
                     <div>
-                        <h3 class="font-bold mb-3 flex items-center justify-between dark:text-white">
-                            <span>👥 参加者</span>
-                            <span class="text-sm bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-full">{{ players.length }}人</span>
-                        </h3>
-                        <ul class="divide-y divide-gray-100 dark:divide-slate-700 border dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-700">
-                            <li v-for="p in players" :key="p.id" class="px-5 py-3 flex items-center justify-between">
-                                <span class="font-bold dark:text-white">{{ p.name }}</span>
-                                <div class="space-x-2 flex items-center">
-                                    <span v-if="p.id === peerId" class="text-xs bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 px-2 py-1 rounded font-bold">あなた</span>
-                                    <span v-if="p.isHost" class="text-xs bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-2 py-1 rounded font-bold">ホスト</span>
-                                    <button v-if="isHost && !p.isHost" @click="kickPlayer(p.id)" class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded font-bold transition ml-2">キック</button>
+                        <h3 class="font-bold mb-2">👥 参加者 ({{ players.length }}人)</h3>
+                        <ul class="divide-y border rounded-xl overflow-hidden bg-white dark:bg-slate-700 dark:divide-slate-600 dark:border-slate-600">
+                            <li v-for="p in players" :key="p.id" class="px-4 py-2 flex justify-between items-center">
+                                <span class="font-bold">{{ p.name }}</span>
+                                <div class="flex gap-2">
+                                    <span v-if="p.id === peerId" class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded font-bold">あなた</span>
+                                    <button v-if="isHost && !p.isHost" @click="kickPlayer(p.id)" class="text-xs bg-red-500 text-white px-2 py-1 rounded">キック</button>
                                 </div>
                             </li>
                         </ul>
                     </div>
 
-                    <div v-if="isHost" class="border-t-2 dark:border-slate-700 pt-5">
-                        <button @click="startGame" :disabled="players.length < 2" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-4 rounded-2xl text-lg shadow-lg disabled:opacity-40 transition">
-                            ゲーム開始 ({{ players.length }}人で遊ぶ)
-                        </button>
+                    <div v-if="isHost" class="border-t-2 pt-4 dark:border-slate-700">
+                        <h3 class="font-bold mb-3 text-center text-gray-500">ゲームを選ぶ</h3>
+                        <div class="grid grid-cols-1 gap-3">
+                            <button @click="startBomb" :disabled="players.length < 2" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl shadow disabled:opacity-50">💣 ボム・ワード</button>
+                            <button @click="startWolf" :disabled="players.length < 3" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow disabled:opacity-50">🐺 ワードウルフ (3人～)</button>
+                            <button @click="startNG" :disabled="players.length < 2" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 rounded-xl shadow disabled:opacity-50">🚫 NGワードゲーム</button>
+                        </div>
                     </div>
-                    <div v-else class="text-center text-sm font-bold text-gray-400 py-4">
-                        ホストが開始するのをお待ちください...☕
-                    </div>
+                    <div v-else class="text-center text-sm font-bold text-gray-400 py-4">ホストがゲームを選ぶのをお待ちください...☕</div>
                 </div>
 
-                <!-- 画面3: ゲーム中画面 -->
-                <div v-if="screen === 'game'" class="space-y-6 flex flex-col items-center">
-                    
-                    <!-- プレイヤー一覧とライフ表示 -->
+                <!-- 💣 ゲーム: ボム・ワード -->
+                <div v-if="screen === 'bomb'" class="space-y-6 flex flex-col items-center relative">
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
-                        <div v-for="p in players" :key="p.id" 
-                            class="p-3 border-2 rounded-2xl flex flex-col items-center justify-center transition-all duration-300"
-                            :class="{
-                                'bg-rose-100 dark:bg-rose-950/60 border-rose-500 shadow-md scale-105 ring-2 ring-rose-400': currentHolderId === p.id,
-                                'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 opacity-80': currentHolderId !== p.id,
-                                'opacity-30 line-through': p.lives <= 0
-                            }">
-                            <div class="text-xs font-bold truncate max-w-[100px] mb-1 dark:text-white">{{ p.name }}</div>
-                            <div class="flex gap-1 text-sm">
-                                <span v-for="i in 3" :key="i">
-                                    {{ i <= p.lives ? '❤️' : '🖤' }}
-                                </span>
-                            </div>
+                        <div v-for="p in players" :key="p.id" class="p-2 border-2 rounded-xl flex flex-col items-center transition"
+                            :class="{'bg-rose-100 dark:bg-rose-950 border-rose-500 scale-105': bomb.currentHolderId === p.id, 'opacity-30': p.lives <= 0}">
+                            <div class="text-xs font-bold truncate max-w-[80px]">{{ p.name }}</div>
+                            <div class="text-xs">{{ '❤️'.repeat(p.lives) }}{{ '🖤'.repeat(3 - p.lives) }}</div>
                         </div>
                     </div>
 
-                    <!-- 爆弾アニメーションエリア -->
-                    <div class="py-4 text-center relative w-full flex flex-col items-center">
-                        <div class="text-7xl sm:text-8xl transition-transform duration-200" 
-                            :class="[
-                                isMyTurn ? 'bomb-panic' : 'bomb-pulse',
-                                isExploding ? 'scale-150' : ''
-                            ]">
-                            {{ isExploding ? '💥' : '💣' }}
+                    <div class="py-2 text-center relative w-full flex flex-col items-center">
+                        <div class="text-7xl transition-transform" :class="[bomb.currentHolderId===peerId ? 'bomb-panic' : 'bomb-pulse', bomb.isExploding ? 'scale-150' : '']">
+                            {{ bomb.isExploding ? '💥' : '💣' }}
                         </div>
-
-                        <!-- 誰の番かのアナウンス -->
-                        <div class="mt-4">
-                            <span v-if="isMyTurn" class="bg-rose-600 text-white font-black text-lg px-6 py-2 rounded-full shadow-lg animate-bounce inline-block">
-                                あなたの手元に爆弾があります！！
-                            </span>
-                            <span v-else class="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold text-sm px-4 py-1.5 rounded-full inline-block">
-                                {{ currentHolder?.name }} が回答中...
-                            </span>
-                        </div>
+                        <div class="mt-4 font-bold text-lg text-rose-600">{{ bomb.currentTheme }}</div>
                     </div>
 
-                    <!-- お題エリア -->
-                    <div class="w-full bg-gradient-to-r from-amber-500 to-rose-500 p-1 rounded-2xl shadow-md">
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-[14px] text-center">
-                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">現在のクリア条件</p>
-                            <p class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-wider">
-                                {{ currentTheme }}
-                            </p>
+                    <div class="w-full flex flex-col gap-1">
+                        <div class="flex gap-2">
+                            <input v-model="bomb.inputWord" :disabled="bomb.currentHolderId !== peerId || bomb.isExploding" type="text" class="flex-1 px-4 py-2 border-2 rounded-xl dark:bg-slate-700" placeholder="単語を入力してパス！(2文字以上)">
+                            <button @click="submitBombWord" :disabled="bomb.currentHolderId !== peerId || !bomb.inputWord" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl">パス</button>
                         </div>
+                        <div v-if="bomb.errorMsg" class="text-red-500 text-xs font-bold text-center animate-pulse">{{ bomb.errorMsg }}</div>
                     </div>
 
-                    <!-- 単語入力フォーム (自分の番のみ入力可能) -->
-                    <div class="w-full space-y-2">
-                        <form @submit.prevent="submitWord" class="flex gap-2">
-                            <input v-model="inputWord" :disabled="!isMyTurn || isExploding" type="text" 
-                                class="flex-1 px-4 py-3 border-2 border-rose-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-white rounded-2xl text-lg font-bold outline-none focus:border-rose-500 transition disabled:opacity-40 disabled:bg-gray-100" 
-                                placeholder="言葉を入力してパス！">
-                            <button type="submit" :disabled="!isMyTurn || !inputWord || isExploding" 
-                                class="bg-rose-600 hover:bg-rose-700 text-white font-black px-6 py-3 rounded-2xl shadow-lg disabled:opacity-40 transition">
-                                パス！
-                            </button>
-                        </form>
-                        <p v-if="inputError" class="text-red-500 text-xs text-center font-bold">{{ inputError }}</p>
+                    <div class="flex flex-wrap justify-center gap-1 text-xs text-gray-400 w-full">
+                        <span v-for="w in bomb.usedWords" :key="w" class="bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">{{ w }}</span>
                     </div>
 
-                    <!-- これまで出た単語ログ (重複禁止チェック用) -->
-                    <div class="w-full border-t dark:border-slate-700 pt-3 text-center">
-                        <p class="text-xs font-bold text-gray-400 mb-2">使われた言葉 (同じ単語は使えません)</p>
-                        <div class="flex flex-wrap justify-center gap-1.5 max-h-24 overflow-y-auto p-1">
-                            <span v-for="w in usedWords" :key="w" class="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold px-2 py-1 rounded-md">
-                                {{ w }}
-                            </span>
-                        </div>
+                    <!-- ホスト専用：差し戻し機能 -->
+                    <div v-if="isHost && bomb.lastPassId && !bomb.isExploding" class="w-full mt-2 p-3 bg-red-50 dark:bg-rose-900/20 rounded-xl text-center border-2 border-dashed border-red-200 dark:border-rose-800">
+                        <p class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">
+                            <span class="text-rose-600 font-black">「{{ bomb.lastPassWord }}」</span>は適当すぎ？
+                        </p>
+                        <button @click="rejectLastWord" class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-bold px-4 py-2 rounded-lg shadow">
+                            🙅‍♂️ 今のなし！(爆弾を戻す)
+                        </button>
                     </div>
 
+                    <button v-if="isHost" @click="backToLobby" class="text-xs mt-2 text-gray-400 underline">強制終了してロビーへ</button>
                 </div>
 
-                <!-- 画面4: 勝敗決着画面 -->
-                <div v-if="screen === 'result'" class="text-center space-y-6 py-4">
-                    <div class="text-6xl animate-bounce">🏆</div>
-                    <div>
-                        <p class="text-sm font-bold text-gray-500 dark:text-gray-400">生き残りチャンピオン！</p>
-                        <h2 class="text-4xl font-black text-rose-600 dark:text-rose-400 mt-2">{{ winnerName }}</h2>
+                <!-- 🐺 ゲーム: ワードウルフ -->
+                <div v-if="screen === 'wolf'" class="space-y-6 text-center">
+                    <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400">ワードウルフ</h2>
+                    <div class="bg-blue-50 dark:bg-blue-900/30 p-8 rounded-2xl border border-blue-200">
+                        <p class="text-sm font-bold text-gray-500 mb-2">あなたのお題</p>
+                        <p class="text-3xl font-black">{{ myWolfTheme }}</p>
+                    </div>
+                    <p class="text-sm text-gray-500">話し合って、自分とは違うお題（ウルフ）の人を見つけ出そう！</p>
+                    
+                    <div v-if="wolf.isResult" class="mt-6 p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl">
+                        <h3 class="font-bold text-lg mb-2">結果発表</h3>
+                        <ul class="text-left space-y-1">
+                            <li v-for="(theme, id) in wolf.assignments" :key="id">
+                                {{ getPlayerName(id) }}: <strong>{{ theme }}</strong>
+                            </li>
+                        </ul>
                     </div>
 
-                    <div v-if="isHost" class="border-t-2 dark:border-slate-700 pt-6">
-                        <button @click="backToLobby" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-slate-900 transition">
-                            ロビーに戻る
-                        </button>
+                    <div v-if="isHost" class="flex flex-col gap-2 mt-4">
+                        <button v-if="!wolf.isResult" @click="endWolf" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-xl">結果を見る</button>
+                        <button v-if="wolf.isResult" @click="backToLobby" class="bg-gray-600 text-white font-bold py-3 rounded-xl">ロビーに戻る</button>
+                    </div>
+                </div>
+
+                <!-- 🚫 ゲーム: NGワード -->
+                <div v-if="screen === 'ng'" class="space-y-6 text-center">
+                    <h2 class="text-xl font-bold text-fuchsia-600 dark:text-fuchsia-400">NGワードゲーム</h2>
+                    <p class="text-sm text-gray-500 mb-4">相手にNGワードを言わせよう！自分の言葉は秘密です。</p>
+                    
+                    <ul class="grid grid-cols-1 gap-2 text-left">
+                        <li v-for="p in players" :key="p.id" class="p-3 border rounded-xl flex justify-between items-center bg-gray-50 dark:bg-slate-700">
+                            <span class="font-bold">{{ p.name }} <span v-if="p.id === peerId" class="text-xs text-fuchsia-500">(あなた)</span></span>
+                            <span v-if="p.id !== peerId || ng.isResult" class="font-black text-lg text-red-500 bg-red-100 dark:bg-red-900/30 px-3 py-1 rounded">
+                                {{ ng.assignments[p.id] }}
+                            </span>
+                            <span v-else class="font-black text-lg text-gray-400 bg-gray-200 dark:bg-slate-600 px-3 py-1 rounded">
+                                ？？？？
+                            </span>
+                        </li>
+                    </ul>
+
+                    <div v-if="isHost" class="flex flex-col gap-2 mt-4">
+                        <button v-if="!ng.isResult" @click="endNG" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 rounded-xl">全員のNGワードを公開</button>
+                        <button v-if="ng.isResult" @click="backToLobby" class="bg-gray-600 text-white font-bold py-3 rounded-xl">ロビーに戻る</button>
                     </div>
                 </div>
 
@@ -239,155 +193,86 @@
 
         createApp({
             setup() {
-                const screen = ref('home');
+                const screen = ref('home'); 
                 const errorMsg = ref('');
-                const inputError = ref('');
-
                 const isNightMode = ref(false);
                 const isStreamerMode = ref(false);
 
-                // ユーザー情報
-                const myName = ref(localStorage.getItem('my_party_game_name') || '');
+                const myName = ref(localStorage.getItem('party_hub_name') || '');
                 const peerId = ref('');
                 const isHost = ref(false);
                 const roomId = ref('');
                 const inputRoomId = ref('');
-                const players = reactive([]); // { id, name, isHost, lives }
-
-                // ゲームステート
-                const currentHolderId = ref('');
-                const currentTheme = ref('');
-                const inputWord = ref('');
-                const usedWords = reactive([]);
-                const isExploding = ref(false);
-                const winnerName = ref('');
+                const players = reactive([]); 
 
                 let peer = null;
                 const connections = {};
                 let hostConn = null;
-                let bombTimer = null;
 
-                // ==========================================
-                // Web Audio API による効果音合成 (外部ファイル不要)
-                // ==========================================
+                // --- 共有Audio ---
                 let audioCtx = null;
-                const initAudio = () => {
-                    if (!audioCtx) {
-                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    }
-                };
-
-                // チクタク音
-                const playTickSound = (isFast = false) => {
-                    if (!audioCtx) return;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(isFast ? 1200 : 800, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.05);
-                };
-
-                // パス成功音
-                const playPassSound = () => {
+                const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); };
+                const playSound = (type) => {
                     if (!audioCtx) return;
                     const now = audioCtx.currentTime;
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, now); // C5
-                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-                    gain.gain.setValueAtTime(0.2, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(now + 0.2);
-                };
-
-                // 爆発音 (ホワイトノイズ＋急激なローパスフィルター)
-                const playExplosionSound = () => {
-                    if (!audioCtx) return;
-                    const now = audioCtx.currentTime;
-                    const bufferSize = audioCtx.sampleRate * 1.5;
-                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = Math.random() * 2 - 1; // ノイズ
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    if (type === 'tick') {
+                        osc.type = 'triangle'; osc.frequency.setValueAtTime(800, now);
+                        gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                        osc.start(); osc.stop(now + 0.05);
+                    } else if (type === 'pass') {
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.08);
+                        gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                        osc.start(); osc.stop(now + 0.2);
+                    } else if (type === 'explode') {
+                        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(10, now + 1);
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
+                        osc.start(); osc.stop(now + 1);
                     }
-                    const noise = audioCtx.createBufferSource();
-                    noise.buffer = buffer;
-
-                    const filter = audioCtx.createBiquadFilter();
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(800, now);
-                    filter.frequency.exponentialRampToValueAtTime(30, now + 1.2);
-
-                    const gain = audioCtx.createGain();
-                    gain.gain.setValueAtTime(1.0, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-
-                    noise.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    noise.start();
                 };
 
-                // ==========================================
-                // お題リスト (パスするごとにランダム出題)
-                // ==========================================
-                const themeList = [
-                    '「あ」で始まる言葉', '「い」で始まる言葉', '「う」で始まる言葉', '「え」で始まる言葉', '「お」で始まる言葉',
-                    '「か」で始まる言葉', '「き」で始まる言葉', '「す」で始まる言葉', '「た」で始まる言葉', '「な」で始まる言葉',
-                    '「は」で始まる言葉', '「ま」で始まる言葉', '「や」で始まる言葉', '「ら」で始まる言葉', '「わ」で始まる言葉',
-                    '3文字の言葉', '4文字の言葉', '5文字の言葉',
-                    '食べ物・飲み物', '赤いもの', '丸いもの', '重いもの', '冷たいもの',
-                    '動物・生き物', 'コンビニで買えるもの', '学校にあるもの', 'カタカナの言葉'
-                ];
+                // --- ゲーム状態管理 ---
+                // ボム・ワード (適当対策用プロパティ追加)
+                const bomb = reactive({ 
+                    currentHolderId: '', currentTheme: '', inputWord: '', usedWords: [], 
+                    isExploding: false, timer: null, errorMsg: '', lastPassId: '', lastPassWord: '' 
+                });
+                const bombThemes = ['食べ物', '「あ」で始まる言葉', 'FPSゲームの用語', 'マイクラのアイテム', 'IT用語', 'プログラミング言語', '赤いもの', '国名', 'カタカナの言葉'];
+                // ワードウルフ
+                const wolf = reactive({ assignments: {}, isResult: false });
+                const wolfPairs = [['アコースティックギター', 'エレキギター'], ['Windows', 'Ubuntu'], ['C#', 'JavaScript'], ['うどん', 'そば'], ['水族館', '動物園']];
+                // NGワード
+                const ng = reactive({ assignments: {}, isResult: false });
+                const ngWordsList = ['マジ', 'やばい', '草', 'それな', 'たしかに', 'なるほど', 'エイム', 'バグ', 'ウケる'];
 
-                const getRandomTheme = () => themeList[Math.floor(Math.random() * themeList.length)];
-
-                // ローカルストレージに名前保存
-                watch(myName, (val) => localStorage.setItem('my_party_game_name', val));
+                watch(myName, (val) => localStorage.setItem('party_hub_name', val));
 
                 const toggleNightMode = () => {
                     isNightMode.value = !isNightMode.value;
-                    if (isNightMode.value) document.documentElement.classList.add('dark');
-                    else document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.toggle('dark', isNightMode.value);
+                };
+                const displayRoomId = (id) => isStreamerMode.value ? id.split('-')[0] + '-••••••' : id;
+                const getPlayerName = (id) => players.find(p => p.id === id)?.name || 'Unknown';
+
+                // --- ホスト通信系 ---
+                const broadcastState = () => {
+                    if (!isHost.value) return;
+                    const state = { 
+                        type: 'state', screen: screen.value, players: players,
+                        bomb: { ...bomb, timer: null }, 
+                        wolf: wolf, ng: ng
+                    };
+                    Object.values(connections).forEach(c => { if(c.open) c.send(state); });
                 };
 
-                const displayRoomId = (id) => {
-                    if (!id) return '';
-                    if (!isStreamerMode.value) return id;
-                    const parts = id.split('-');
-                    return parts[0] + '-' + '•'.repeat(parts[1].length);
-                };
-
-                const copyRoomId = () => {
-                    navigator.clipboard.writeText(roomId.value);
-                    alert('ルームIDをコピーしました！');
-                };
-
-                const currentHolder = computed(() => players.find(p => p.id === currentHolderId.value));
-                const isMyTurn = computed(() => currentHolderId.value === peerId.value);
-
-                // ==========================================
-                // ホスト処理
-                // ==========================================
                 const createRoom = () => {
-                    initAudio();
-                    errorMsg.value = '';
-                    const id = 'BW-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                    initAudio(); errorMsg.value = '';
+                    const id = 'HUB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                     peer = new Peer(id);
                     peer.on('open', (i) => {
-                        peerId.value = i;
-                        roomId.value = i;
-                        isHost.value = true;
-                        screen.value = 'lobby';
+                        peerId.value = i; roomId.value = i; isHost.value = true; screen.value = 'lobby';
                         players.push({ id: i, name: myName.value, isHost: true, lives: 3 });
                     });
                     peer.on('connection', (conn) => {
@@ -396,215 +281,175 @@
                         conn.on('close', () => {
                             const idx = players.findIndex(p => p.id === conn.peer);
                             if (idx !== -1) players.splice(idx, 1);
-                            delete connections[conn.peer];
-                            broadcast({ type: 'players', players: players });
+                            broadcastState();
                         });
                     });
-                    peer.on('error', () => errorMsg.value = '通信エラーが発生しました。');
-                };
-
-                const broadcast = (data) => {
-                    Object.values(connections).forEach(c => { if(c.open) c.send(data); });
                 };
 
                 const kickPlayer = (targetId) => {
-                    if (!confirm('このプレイヤーをキックしますか？')) return;
-                    if (connections[targetId]) {
-                        connections[targetId].send({ type: 'kicked' });
-                        setTimeout(() => { connections[targetId].close(); delete connections[targetId]; }, 300);
-                    }
-                    const idx = players.findIndex(p => p.id === targetId);
-                    if (idx !== -1) players.splice(idx, 1);
-                    broadcast({ type: 'players', players: players });
+                    if (connections[targetId]) { connections[targetId].send({ type: 'kicked' }); connections[targetId].close(); }
                 };
 
                 const handleHostData = (senderId, data) => {
                     if (data.type === 'join') {
                         players.push({ id: senderId, name: data.name, isHost: false, lives: 3 });
-                        broadcast({ type: 'players', players: players });
-                    } else if (data.type === 'pass_word') {
-                        // 言葉のパス受付
-                        executePassWord(data.word);
+                        broadcastState();
+                    } else if (data.type === 'bomb_pass') {
+                        executeBombPass(data.word);
                     }
                 };
 
-                const startGame = () => {
-                    initAudio();
-                    players.forEach(p => p.lives = 3);
-                    usedWords.splice(0, usedWords.length);
-                    winnerName.value = '';
-                    screen.value = 'game';
-                    startNewRound();
-                };
-
-                const startNewRound = () => {
-                    // 生存者の中からランダムで爆弾所持者を決定
-                    const alivePlayers = players.filter(p => p.lives > 0);
-                    if (alivePlayers.length <= 1) {
-                        endGame(alivePlayers[0]?.name || '勝者なし');
-                        return;
-                    }
-
-                    const nextHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-                    currentHolderId.value = nextHolder.id;
-                    currentTheme.value = getRandomTheme();
-                    isExploding.value = false;
-
-                    broadcastState();
-
-                    // ランダムタイマーをセット (20〜35秒で爆発)
-                    clearTimeout(bombTimer);
-                    const bombDuration = (Math.floor(Math.random() * 15) + 20) * 1000;
-                    bombTimer = setTimeout(() => {
-                        triggerExplosion();
-                    }, bombDuration);
-                };
-
-                // 言葉がパスされた時の共通処理
-                const executePassWord = (word) => {
-                    usedWords.push(word);
-                    playPassSound();
-
-                    // 次の生存プレイヤーを探してパス
-                    const alivePlayers = players.filter(p => p.lives > 0);
-                    const currentIdx = alivePlayers.findIndex(p => p.id === currentHolderId.value);
-                    const nextIdx = (currentIdx + 1) % alivePlayers.length;
-                    
-                    currentHolderId.value = alivePlayers[nextIdx].id;
-                    currentTheme.value = getRandomTheme(); // 新しいお題
-
-                    broadcastState();
-                };
-
-                // 爆発処理
-                const triggerExplosion = () => {
-                    clearTimeout(bombTimer);
-                    isExploding.value = true;
-                    playExplosionSound();
-
-                    // 爆発した人のライフを減らす
-                    const victim = players.find(p => p.id === currentHolderId.value);
-                    if (victim) victim.lives--;
-
-                    broadcastState();
-
-                    // 3秒後に生存判定・次ラウンドへ
-                    setTimeout(() => {
-                        const alivePlayers = players.filter(p => p.lives > 0);
-                        if (alivePlayers.length <= 1) {
-                            endGame(alivePlayers[0]?.name || '勝者なし');
-                        } else {
-                            startNewRound();
-                        }
-                    }, 3000);
-                };
-
-                const broadcastState = () => {
-                    const state = {
-                        type: 'state',
-                        players: players,
-                        currentHolderId: currentHolderId.value,
-                        currentTheme: currentTheme.value,
-                        usedWords: usedWords,
-                        isExploding: isExploding.value
-                    };
-                    broadcast(state);
-                };
-
-                const endGame = (winner) => {
-                    winnerName.value = winner;
-                    screen.value = 'result';
-                    broadcast({ type: 'game_over', winner: winner });
-                };
-
-                const backToLobby = () => {
-                    screen.value = 'lobby';
-                    broadcast({ type: 'back_to_lobby' });
-                };
-
-                // ==========================================
-                // ゲスト処理
-                // ==========================================
+                // --- ゲスト通信系 ---
                 const joinRoom = () => {
-                    initAudio();
-                    errorMsg.value = '';
+                    initAudio(); errorMsg.value = '';
                     peer = new Peer();
                     peer.on('open', (id) => {
-                        peerId.value = id;
-                        const targetId = inputRoomId.value.trim().toUpperCase();
-                        hostConn = peer.connect(targetId);
-                        hostConn.on('open', () => {
-                            roomId.value = targetId;
-                            hostConn.send({ type: 'join', name: myName.value });
-                            screen.value = 'lobby';
-                        });
+                        peerId.value = id; const target = inputRoomId.value.trim().toUpperCase();
+                        hostConn = peer.connect(target);
+                        hostConn.on('open', () => { hostConn.send({ type: 'join', name: myName.value }); roomId.value = target; });
                         hostConn.on('data', (data) => {
-                            if (data.type === 'players') {
+                            if (data.type === 'state') {
+                                const prevHolder = bomb.currentHolderId;
                                 players.splice(0, players.length, ...data.players);
-                            } else if (data.type === 'state') {
-                                const prevHolder = currentHolderId.value;
-                                players.splice(0, players.length, ...data.players);
-                                currentHolderId.value = data.currentHolderId;
-                                currentTheme.value = data.currentTheme;
-                                usedWords.splice(0, usedWords.length, ...data.usedWords);
+                                Object.assign(bomb, data.bomb); Object.assign(wolf, data.wolf); Object.assign(ng, data.ng);
+                                screen.value = data.screen;
                                 
-                                if (!isExploding.value && data.isExploding) {
-                                    playExplosionSound();
-                                } else if (prevHolder !== data.currentHolderId) {
-                                    playPassSound();
+                                if (screen.value === 'bomb') {
+                                    if (bomb.isExploding && !prevHolder) playSound('explode'); 
+                                    else if (prevHolder && prevHolder !== bomb.currentHolderId && !bomb.isExploding) {
+                                        // 差し戻しの場合は警告音を鳴らす
+                                        if(bomb.lastPassId === '') playSound('explode'); 
+                                        else playSound('pass');
+                                    }
                                 }
-                                isExploding.value = data.isExploding;
-                                screen.value = 'game';
-                            } else if (data.type === 'game_over') {
-                                winnerName.value = data.winner;
-                                screen.value = 'result';
-                            } else if (data.type === 'back_to_lobby') {
-                                screen.value = 'lobby';
-                            } else if (data.type === 'kicked') {
-                                alert('ホストによってキックされました。');
-                                location.reload();
-                            }
+                            } else if (data.type === 'kicked') { location.reload(); }
                         });
-                        hostConn.on('close', () => {
-                            errorMsg.value = 'ホストとの接続が切れました。';
-                            screen.value = 'home';
-                        });
+                        hostConn.on('close', () => { errorMsg.value = 'ホストと切断されました'; screen.value = 'home'; });
                     });
-                    peer.on('error', () => errorMsg.value = 'ルームが見つかりません。');
                 };
 
-                // 単語の送信
-                const submitWord = () => {
-                    inputError.value = '';
-                    const word = inputWord.value.trim();
-                    if (!word) return;
+                // --- ゲーム制御 (ホスト用) ---
+                const backToLobby = () => { screen.value = 'lobby'; clearTimeout(bomb.timer); broadcastState(); };
 
-                    // 重複チェック
-                    if (usedWords.includes(word)) {
-                        inputError.value = 'すでに使われた言葉です！';
+                // ボムロジック
+                const startBomb = () => {
+                    initAudio(); players.forEach(p => p.lives = 3);
+                    bomb.usedWords = []; bomb.isExploding = false; 
+                    bomb.lastPassId = ''; bomb.lastPassWord = '';
+                    screen.value = 'bomb';
+                    startBombRound();
+                };
+                const startBombRound = () => {
+                    const alive = players.filter(p => p.lives > 0);
+                    if (alive.length <= 1) { backToLobby(); alert('決着！'); return; }
+                    bomb.currentHolderId = alive[Math.floor(Math.random() * alive.length)].id;
+                    bomb.currentTheme = bombThemes[Math.floor(Math.random() * bombThemes.length)];
+                    bomb.isExploding = false;
+                    bomb.errorMsg = '';
+                    bomb.lastPassId = '';
+                    broadcastState();
+                    
+                    clearTimeout(bomb.timer);
+                    bomb.timer = setTimeout(() => {
+                        bomb.isExploding = true; playSound('explode');
+                        bomb.lastPassId = ''; // 爆発したら差し戻し不可
+                        const victim = players.find(p => p.id === bomb.currentHolderId);
+                        if(victim) victim.lives--;
+                        broadcastState();
+                        setTimeout(startBombRound, 3000);
+                    }, (Math.floor(Math.random() * 10) + 15) * 1000);
+                };
+                
+                const executeBombPass = (word) => {
+                    if(bomb.usedWords.includes(word)) return;
+                    bomb.usedWords.push(word); 
+                    playSound('pass');
+                    
+                    // ホスト差し戻し用に直前のプレイヤーと単語を記録
+                    bomb.lastPassId = bomb.currentHolderId;
+                    bomb.lastPassWord = word;
+
+                    const alive = players.filter(p => p.lives > 0);
+                    const nextIdx = (alive.findIndex(p => p.id === bomb.currentHolderId) + 1) % alive.length;
+                    bomb.currentHolderId = alive[nextIdx].id;
+                    bomb.currentTheme = bombThemes[Math.floor(Math.random() * bombThemes.length)];
+                    bomb.errorMsg = '';
+                    broadcastState();
+                };
+
+                const submitBombWord = () => {
+                    bomb.errorMsg = '';
+                    const w = bomb.inputWord.trim();
+                    if(!w) return;
+                    
+                    // 1. 文字数制限
+                    if (w.length < 2) {
+                        bomb.errorMsg = '2文字以上で入力してください！';
+                        return;
+                    }
+                    // 2. 同一文字の連続（あああ等）を弾く
+                    if (/^(.)\1+$/.test(w)) {
+                        bomb.errorMsg = '適当な文字の連続はダメです！';
+                        return;
+                    }
+                    // 3. 記号のみを弾く
+                    if (/^[!-/:-@[-`{-~、-〜]+$/.test(w)) {
+                        bomb.errorMsg = '記号だけで逃げるな！';
                         return;
                     }
 
-                    if (isHost.value) {
-                        executePassWord(word);
-                    } else {
-                        hostConn.send({ type: 'pass_word', word: word });
-                    }
-                    inputWord.value = '';
+                    if(isHost.value) executeBombPass(w);
+                    else hostConn.send({ type: 'bomb_pass', word: w });
+                    bomb.inputWord = '';
                 };
 
-                // 手元に爆弾がある間、チクタク音を鳴らす
+                // ホストによる差し戻し機能
+                const rejectLastWord = () => {
+                    if (!bomb.lastPassId || bomb.isExploding) return;
+                    
+                    // 履歴から削除
+                    bomb.usedWords.pop();
+                    
+                    // 爆弾を直前のパスした人に強制的に戻す
+                    bomb.currentHolderId = bomb.lastPassId;
+                    bomb.lastPassId = '';
+                    bomb.lastPassWord = '';
+                    
+                    playSound('explode'); // 警告音
+                    broadcastState();
+                };
+
                 setInterval(() => {
-                    if (screen.value === 'game' && !isExploding.value) {
-                        playTickSound(isMyTurn.value);
-                    }
-                }, 800);
+                    if (screen.value === 'bomb' && !bomb.isExploding) playSound('tick');
+                }, 1000);
+
+                // ウルフロジック
+                const startWolf = () => {
+                    const pair = wolfPairs[Math.floor(Math.random() * wolfPairs.length)];
+                    const isWolfFirst = Math.random() > 0.5;
+                    const wolfId = players[Math.floor(Math.random() * players.length)].id;
+                    wolf.assignments = {};
+                    players.forEach(p => {
+                        wolf.assignments[p.id] = (p.id === wolfId) ? (isWolfFirst ? pair[0] : pair[1]) : (isWolfFirst ? pair[1] : pair[0]);
+                    });
+                    wolf.isResult = false; screen.value = 'wolf'; broadcastState();
+                };
+                const endWolf = () => { wolf.isResult = true; broadcastState(); };
+                const myWolfTheme = computed(() => wolf.assignments[peerId.value] || '');
+
+                // NGワードロジック
+                const startNG = () => {
+                    let words = [...ngWordsList].sort(() => 0.5 - Math.random());
+                    ng.assignments = {};
+                    players.forEach((p, i) => { ng.assignments[p.id] = words[i % words.length]; });
+                    ng.isResult = false; screen.value = 'ng'; broadcastState();
+                };
+                const endNG = () => { ng.isResult = true; broadcastState(); };
 
                 return {
-                    screen, errorMsg, inputError, isNightMode, isStreamerMode, toggleNightMode,
-                    myName, peerId, isHost, roomId, inputRoomId, players,
-                    currentHolderId, currentHolder, currentTheme, inputWord, usedWords, isExploding, winnerName, isMyTurn,
-                    createRoom, joinRoom, copyRoomId, displayRoomId, kickPlayer, startGame, submitWord, backToLobby
+                    screen, errorMsg, isNightMode, isStreamerMode, toggleNightMode, myName, peerId, isHost, roomId, inputRoomId, players,
+                    bomb, wolf, ng, myWolfTheme, getPlayerName, displayRoomId, createRoom, joinRoom, kickPlayer,
+                    startBomb, submitBombWord, rejectLastWord, startWolf, endWolf, startNG, endNG, backToLobby
                 };
             }
         }).mount('#app');
